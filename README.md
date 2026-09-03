@@ -25,58 +25,7 @@ The application is designed specifically for **Pakistan**, using **PKR (Pakistan
 
 ---
 
-## 🌟 Key Features
-
-### 📊 Dashboard
-- Financial overview at a glance
-- Summary of financial activities
-- Expense and income insights
-- User-specific financial data
-- Reusable date filtering
-
-### 🏠 Home Finance
-- Track household financial activities
-- Manage income and expenses
-- Add, edit and delete records
-- Financial summaries
-- PKR-based currency formatting
-- Date-based filtering
-
-### 🚗 Vehicle Finance
-- Manage vehicle-related financial records
-- Track vehicle expenses
-- Vehicle-specific financial information
-- Add, edit and delete records
-- PKR currency support
-- Date filtering
-
-### 🤝 Len Den / Udhaar Management
-- Track personal lending and borrowing
-- Create shared transactions
-- Share transactions with registered users
-- Receiver can **Accept** or **Dispute**
-- Both users remain connected to the same transaction
-- Transaction history
-- Date-based filtering
-
-### 🔐 Authentication & Authorization
-- User registration
-- Secure login
-- JWT authentication
-- Protected routes
-- User-specific data isolation
-- Role-based access control
-- Super Admin support
-
-### 👑 Super Admin
-The application includes a dedicated Super Admin account architecture.
-
-Super Admin:
-
-```text
-muzamilteamseven00@gmail.com
-
-🧩 Frontend Architecture
+## 🧩 Frontend Architecture
 
 The frontend follows a component-based and reusable architecture.
 
@@ -100,14 +49,18 @@ Empty State
 Error State
 Date Filter
 
-These components are shared across multiple modules to maintain:
+## These components are shared across multiple modules to maintain:
 
 Consistent UI
 Consistent behavior
 Less duplicated code
 Easier maintenance
 Faster feature development
-♻️ Reusable Component Architecture
+
+---
+
+
+## ♻️ Reusable Component Architecture
                 Reusable Components
                        │
         ┌──────────────┼──────────────┐
@@ -119,18 +72,25 @@ Faster feature development
 
 For example, the same:
 
-Modal
-Form
-Button
-Toast
-DateFilter
-Currency Formatter
+-  Modal
+
+- Form
+
+- Button
+
+- Toast
+
+- DateFilter
+
+- Currency Formatter
 
 can be reused across different financial modules.
 
 This follows the DRY (Don't Repeat Yourself) principle.
 
-📦 Modular Page Architecture
+---
+
+## 📦 Modular Page Architecture
 
 Application features are separated into independent modules.
 
@@ -150,7 +110,9 @@ Pages
 
 Each module uses shared components and services rather than duplicating common functionality.
 
-🔌 API Service Layer
+---
+
+## 🔌 API Service Layer
 
 Frontend API communication is separated from UI components through reusable service functions.
 
@@ -165,11 +127,18 @@ Backend API
 This provides:
 
 Centralized API communication
+
 Cleaner React components
+
 Easier API maintenance
+
 Consistent error handling
+
 Easier backend URL configuration
-🔐 Authentication & Authorization
+
+---
+
+## 🔐 Authentication & Authorization
 
 The application implements authentication using JWT-based authentication.
 
@@ -188,15 +157,20 @@ Authorization
 
 Role-based access control is implemented for:
 
-USER
-ADMIN
-SUPER_ADMIN
+1- USER
+
+2- ADMIN
+
+3- SUPER_ADMIN
 
 The backend remains the final authority for authorization.
 
 Frontend role checks are used for UI visibility, while sensitive authorization is enforced server-side.
 
-👤 User Data Isolation
+---
+
+
+## 👤 User Data Isolation
 
 Financial data is isolated per authenticated user.
 
@@ -208,16 +182,8 @@ User B
    ↓
 User B Financial Records
 
-Backend queries use authenticated user context to ensure users cannot access another user's financial records.
 
-This applies to:
-
-Home Finance
-Vehicles
-Transactions
-Len Den records
-Shared transactions
-🤝 Shared Transaction Architecture
+## 🤝 Shared Transaction Architecture
 
 Len Den supports shared Udhaar transactions between registered users.
 
@@ -236,40 +202,10 @@ User B
 
 The transaction remains associated with both users while maintaining ownership and authorization rules.
 
-📅 Reusable Date Filtering
+---
 
-A centralized reusable DateFilter component is used across financial modules.
 
-Supported filters include:
-
-All Time
-Today
-This Week
-This Month
-Last Month
-Last 3 Months
-Last 6 Months
-This Year
-Custom Date Range
-
-Filtering follows:
-
-DateFilter
-    ↓
-startDate / endDate
-    ↓
-API Request
-    ↓
-Backend Query
-    ↓
-MongoDB
-
-Filtering is performed at the backend/database level, rather than loading all records into React and filtering only on the client.
-
-Example:
-
-GET /api/transactions?startDate=2026-07-01&endDate=2026-07-31
-💰 Centralized Currency Formatting
+## 💰 Centralized Currency Formatting
 
 The application uses PKR (Pakistani Rupee) as its financial currency.
 
@@ -281,19 +217,7 @@ PKR 10,000
 PKR 50,000
 PKR 250,000
 
-This keeps financial presentation consistent across:
-
-Dashboard
-Home Finance
-Vehicles
-Len Den
-🗄️ Database Architecture
-
-The application uses:
-
-MongoDB
-Mongoose
-MongoDB Atlas
+---
 
 Production database:
 
@@ -306,7 +230,10 @@ MongoDB Cluster
 ├── vaultly
 │
 └── FinanceTracker
-⚙️ Backend Architecture
+
+---
+
+## ⚙️ Backend Architecture
 
 The backend follows a modular REST API architecture.
 
@@ -328,54 +255,84 @@ MongoDB
 
 This separation keeps business logic away from route definitions and improves maintainability.
 
-🛡️ Security Architecture
+---
+
+## 🛡️ Security Architecture
 
 Security considerations include:
 
-JWT authentication
-Protected API routes
-Protected frontend routes
-Role-based authorization
-User ownership validation
-Per-user data isolation
-Environment-based secrets
-Backend authorization enforcement
-No credentials committed to Git
-Production secrets managed through deployment environment variables
-🎨 UI Architecture
+1- JWT authentication
+
+2- Protected API routes
+
+3- Protected frontend routes
+
+4- Role-based authorization
+
+5- User ownership validation
+
+6-Per-user data isolation
+
+7-Environment-based secrets
+
+8-Backend authorization enforcement
+
+9-No credentials committed to Git
+
+10- Production secrets managed through deployment environment variables
+
+
+## 🎨 UI Architecture
 
 The frontend uses a reusable Glassmorphism + Aura design system.
 
 The UI emphasizes:
 
-Reusable cards
-Reusable buttons
-Reusable forms
-Reusable modals
-Consistent spacing
-Consistent typography
-Responsive layouts
-Toast notifications
-Loading states
-Empty states
-Error states
+- Reusable cards
+
+- Reusable buttons
+
+- Reusable forms
+
+- Reusable modals
+
+- Consistent spacing
+
+- Consistent typography
+
+- Responsive layouts
+
+- Toast notifications
+
+- Loading states
+
+- Empty states
+
+- Error states
 
 Heavy visual effects are avoided where they can negatively affect performance.
 
-📱 Responsive Design
+---
+
+## 📱 Responsive Design
 
 The component architecture supports:
 
-Desktop
-Tablet
-Mobile
-Large Screens
+1- Desktop
+
+2- Tablet
+
+3- Mobile
+
+4- Large Screens
 
 Reusable components automatically adapt to different viewport sizes.
 
 Financial tables and forms are designed to remain usable on smaller screens.
 
-📂 Project Structure
+---
+
+## 📂 Project Structure
 Finance-Tracker/
 │
 ├── backend/
@@ -403,7 +360,10 @@ Finance-Tracker/
 │
 ├── .gitignore
 └── README.md
-🔄 Git Branching Strategy
+
+---
+
+## 🔄 Git Branching Strategy
 
 The project follows a protected production branch workflow.
 
@@ -421,126 +381,37 @@ main
       ↓
 Production Deployment
 
-The main branch is protected through GitHub Rulesets.
+---
 
-Main Branch Protection
-Pull Request required
-Approval required
-Force pushes restricted
-Branch deletion restricted
-Conversation resolution required
-Squash merge workflow
-
-Development work is performed on:
-
-development
-
-Production code is maintained on:
-
-main
-🛠️ Technology Stack
-Frontend
-React
-Vite
-React Router
-JavaScript
-CSS
-Component-based architecture
-Reusable UI components
-Backend
-Node.js
-Express.js
-REST API
-JWT
-Middleware
-Modular service architecture
-Database
-MongoDB
-Mongoose
-MongoDB Atlas
-Development
-Git
-GitHub
-Environment Variables
-REST APIs
-🚀 Setup
-Backend
-cd backend
-npm install
-npm run dev
-
-Environment:
-
-PORT=5000
-MONGODB_URI=<mongodb-connection-string>
-JWT_SECRET=<jwt-secret>
-Frontend
-cd frontend
-npm install
-npm run dev
-🔐 Environment Security
-
-Sensitive configuration must never be committed to GitHub.
-
-Examples:
-
-MONGODB_URI=...
-JWT_SECRET=...
-
-.env files must remain excluded through .gitignore.
-
-Production secrets should be configured through the deployment platform's environment variable system.
-
-📋 Engineering Principles
-
-The project follows these core engineering principles:
-
-♻️ Reusability
-
-Common UI and functionality are implemented once and reused throughout the application.
-
-🧱 Component-Based Design
+## 🧱 Component-Based Design
 
 Pages are composed from smaller reusable components instead of large monolithic components.
 
-🔌 Separation of Concerns
+---
+
+## 🔌 Separation of Concerns
 
 UI, API communication, business logic, authentication and database operations are separated.
 
-🔒 Security First
+---
+
+## 🔒 Security First
 
 Authorization and ownership validation are enforced on the backend.
 
-🚫 DRY
+---
 
-Duplicated UI and business logic are minimized.
-
-📈 Scalability
+## 📈 Scalability
 
 The modular structure allows new financial modules and components to be added without rewriting existing features.
 
-⚡ Performance
+
+---
+
+
+## ⚡ Performance
 
 Backend filtering, reusable components and lightweight UI effects are preferred over unnecessary client-side processing and heavy visual effects.
-
-🧪 Production Checklist
-✓ Authentication
-✓ JWT Protected Routes
-✓ Role-Based Authorization
-✓ User Data Isolation
-✓ Reusable Components
-✓ Modular Frontend
-✓ REST API Architecture
-✓ MongoDB Atlas
-✓ PKR Currency
-✓ Reusable Date Filtering
-✓ Shared Len Den Transactions
-✓ Accept / Dispute Workflow
-✓ Responsive UI
-✓ Loading / Empty / Error States
-✓ Protected main Branch
-✓ Environment-based Secrets
-📄 License
 
 This project is developed for personal/business financial management purposes.
 

@@ -25,53 +25,490 @@ The application is designed specifically for **Pakistan**, using **PKR (Pakistan
 
 ---
 
-## 🌟 Key Features
+## 🧩 Frontend Architecture
 
-### 📊 Dashboard
-- Financial overview at a glance
-- Summary of financial activities
-- Expense and income insights
-- User-specific financial data
-- Reusable date filtering
+The frontend follows a component-based and reusable architecture.
 
-### 🏠 Home Finance
-- Track household financial activities
-- Manage income and expenses
-- Add, edit and delete records
-- Financial summaries
-- PKR-based currency formatting
-- Date-based filtering
+Instead of implementing the same UI separately on every page, common functionality is abstracted into reusable components.
 
-### 🚗 Vehicle Finance
-- Manage vehicle-related financial records
-- Track vehicle expenses
-- Vehicle-specific financial information
-- Add, edit and delete records
-- PKR currency support
-- Date filtering
+Reusable UI Components
 
-### 🤝 Len Den / Udhaar Management
-- Track personal lending and borrowing
-- Create shared transactions
-- Share transactions with registered users
-- Receiver can **Accept** or **Dispute**
-- Both users remain connected to the same transaction
-- Transaction history
-- Date-based filtering
+Examples include:
 
-### 🔐 Authentication & Authorization
-- User registration
-- Secure login
-- JWT authentication
-- Protected routes
-- User-specific data isolation
-- Role-based access control
-- Super Admin support
+Button
+Card
+Modal
+Input
+Select
+Form
+Toast
+Badge
+Table
+Loading State
+Empty State
+Error State
+Date Filter
 
-### 👑 Super Admin
-The application includes a dedicated Super Admin account architecture.
+## These components are shared across multiple modules to maintain:
 
-Super Admin:
+Consistent UI
+Consistent behavior
+Less duplicated code
+Easier maintenance
+Faster feature development
 
-```text
-muzamilteamseven00@gmail.com
+---
+
+
+## ♻️ Reusable Component Architecture
+
+                Reusable Components
+                
+                       │
+        ┌──────────────┼──────────────┐
+        
+        ↓              ↓              ↓
+     
+     Dashboard    Home Finance     Vehicles
+     
+                       │
+                       
+                       ↓
+                  
+                  Len Den
+
+For example, the same:
+
+-  Modal
+
+- Form
+
+- Button
+
+- Toast
+
+- DateFilter
+
+- Currency Formatter
+
+can be reused across different financial modules.
+
+This follows the DRY (Don't Repeat Yourself) principle.
+
+---
+
+## 📦 Modular Page Architecture
+
+Application features are separated into independent modules.
+
+Pages
+
+│
+
+├── Dashboard
+
+│
+
+├── Home Finance
+
+│
+
+├── Vehicles
+
+│
+
+├── Len Den
+
+│
+
+├── Authentication
+
+│
+
+└── Administration
+
+Each module uses shared components and services rather than duplicating common functionality.
+
+---
+
+## 🔌 API Service Layer
+
+Frontend API communication is separated from UI components through reusable service functions.
+
+Instead of directly writing API requests inside every component:
+
+Component
+
+    ↓
+
+API Service
+
+    ↓
+
+Backend API
+
+This provides:
+
+Centralized API communication
+
+Cleaner React components
+
+Easier API maintenance
+
+Consistent error handling
+
+Easier backend URL configuration
+
+---
+
+## 🔐 Authentication & Authorization
+
+The application implements authentication using JWT-based authentication.
+
+Architecture:
+
+Login
+
+  ↓
+
+Authentication
+
+  ↓
+
+JWT
+
+  ↓
+
+Protected Routes
+
+  ↓
+
+Authorized API Requests
+
+Authorization
+
+Role-based access control is implemented for:
+
+1- USER
+
+2- ADMIN
+
+3- SUPER_ADMIN
+
+The backend remains the final authority for authorization.
+
+Frontend role checks are used for UI visibility, while sensitive authorization is enforced server-side.
+
+---
+
+
+## 👤 User Data Isolation
+
+Financial data is isolated per authenticated user.
+
+User A
+
+   ↓
+
+User A Financial Records
+
+User B
+
+   ↓
+
+User B Financial Records
+
+
+## 🤝 Shared Transaction Architecture
+
+Len Den supports shared Udhaar transactions between registered users.
+
+User A
+
+   │
+   
+   │ Create Transaction
+   
+   ↓
+
+Shared Transaction
+
+   │
+   
+   ↓
+
+User B
+
+   │
+   
+   ├── Accept
+   
+   │
+   
+   └── Dispute
+
+
+The transaction remains associated with both users while maintaining ownership and authorization rules.
+
+---
+
+
+## 💰 Centralized Currency Formatting
+
+The application uses PKR (Pakistani Rupee) as its financial currency.
+
+Currency formatting is centralized instead of being manually implemented across individual pages.
+
+Example:
+
+PKR 10,000
+PKR 50,000
+PKR 250,000
+
+---
+
+## ⚙️ Backend Architecture
+
+The backend follows a modular REST API architecture.
+
+Request
+
+   ↓
+
+Route
+
+   ↓
+
+Authentication Middleware
+
+   ↓
+
+Authorization
+
+   ↓
+
+Controller
+
+   ↓
+
+Service
+
+   ↓
+
+Mongoose Model
+
+   ↓
+
+MongoDB
+
+This separation keeps business logic away from route definitions and improves maintainability.
+
+---
+
+## 🛡️ Security Architecture
+
+Security considerations include:
+
+1- JWT authentication
+
+2- Protected API routes
+
+3- Protected frontend routes
+
+4- Role-based authorization
+
+5- User ownership validation
+
+6-Per-user data isolation
+
+7-Environment-based secrets
+
+8-Backend authorization enforcement
+
+9-No credentials committed to Git
+
+10- Production secrets managed through deployment environment variables
+
+
+## 🎨 UI Architecture
+
+The frontend uses a reusable Glassmorphism + Aura design system.
+
+The UI emphasizes:
+
+- Reusable cards
+
+- Reusable buttons
+
+- Reusable forms
+
+- Reusable modals
+
+- Consistent spacing
+
+- Consistent typography
+
+- Responsive layouts
+
+- Toast notifications
+
+- Loading states
+
+- Empty states
+
+- Error states
+
+Heavy visual effects are avoided where they can negatively affect performance.
+
+---
+
+## 📱 Responsive Design
+
+The component architecture supports:
+
+1- Desktop
+
+2- Tablet
+
+3- Mobile
+
+4- Large Screens
+
+Reusable components automatically adapt to different viewport sizes.
+
+Financial tables and forms are designed to remain usable on smaller screens.
+
+---
+
+## 📂 Project Structure
+Finance-Tracker/
+
+│
+
+├── backend/
+
+│   ├── controllers/
+
+│   ├── middleware/
+
+│   ├── models/
+
+│   ├── routes/
+
+│   ├── services/
+
+│   ├── utils/
+
+│   ├── server.js
+
+│   └── package.json
+
+│
+
+├── frontend/
+
+│   ├── src/
+
+│   │   ├── components/
+
+│   │   ├── pages/
+
+│   │   ├── services/
+
+│   │   ├── hooks/
+
+│   │   ├── utils/
+
+│   │   ├── assets/
+
+│   │   └── App.jsx
+
+│   │
+
+│   ├── public/
+
+│   └── package.json
+
+│
+
+├── .gitignore
+
+└── README.md
+
+
+---
+
+## 🔄 Git Branching Strategy
+
+The project follows a protected production branch workflow.
+
+development
+     
+      │
+      
+      ↓
+
+Development & Testing
+
+      │
+      
+      ↓
+
+Pull Request
+
+      │
+      
+      ↓
+    main
+    
+      │
+     
+      ↓
+
+Production Deployment
+
+---
+
+## 🧱 Component-Based Design
+
+Pages are composed from smaller reusable components instead of large monolithic components.
+
+---
+
+## 🔌 Separation of Concerns
+
+UI, API communication, business logic, authentication and database operations are separated.
+
+---
+
+## 🔒 Security First
+
+Authorization and ownership validation are enforced on the backend.
+
+---
+
+## 📈 Scalability
+
+The modular structure allows new financial modules and components to be added without rewriting existing features.
+
+
+---
+
+
+## ⚡ Performance
+
+Backend filtering, reusable components and lightweight UI effects are preferred over unnecessary client-side processing and heavy visual effects.
+
+This project is developed for personal/business financial management purposes.
+
+Unauthorized redistribution or commercial reuse of the source code is not permitted without permission from the project owner.
+
+---
+
+## 👤 Developed By
+
+Muzamil Saleem
+
+Full Stack Developer
+
+Finance Tracker

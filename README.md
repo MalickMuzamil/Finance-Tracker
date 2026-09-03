@@ -61,13 +61,20 @@ Faster feature development
 
 
 ## ♻️ Reusable Component Architecture
+
                 Reusable Components
+                
                        │
         ┌──────────────┼──────────────┐
+        
         ↓              ↓              ↓
+     
      Dashboard    Home Finance     Vehicles
+     
                        │
+                       
                        ↓
+                  
                   Len Den
 
 For example, the same:
@@ -95,17 +102,29 @@ This follows the DRY (Don't Repeat Yourself) principle.
 Application features are separated into independent modules.
 
 Pages
+
 │
+
 ├── Dashboard
+
 │
+
 ├── Home Finance
+
 │
+
 ├── Vehicles
+
 │
+
 ├── Len Den
+
 │
+
 ├── Authentication
+
 │
+
 └── Administration
 
 Each module uses shared components and services rather than duplicating common functionality.
@@ -119,9 +138,13 @@ Frontend API communication is separated from UI components through reusable serv
 Instead of directly writing API requests inside every component:
 
 Component
+
     ↓
+
 API Service
+
     ↓
+
 Backend API
 
 This provides:
@@ -145,14 +168,23 @@ The application implements authentication using JWT-based authentication.
 Architecture:
 
 Login
+
   ↓
+
 Authentication
+
   ↓
+
 JWT
+
   ↓
+
 Protected Routes
+
   ↓
+
 Authorized API Requests
+
 Authorization
 
 Role-based access control is implemented for:
@@ -175,11 +207,15 @@ Frontend role checks are used for UI visibility, while sensitive authorization i
 Financial data is isolated per authenticated user.
 
 User A
+
    ↓
+
 User A Financial Records
 
 User B
+
    ↓
+
 User B Financial Records
 
 
@@ -188,17 +224,29 @@ User B Financial Records
 Len Den supports shared Udhaar transactions between registered users.
 
 User A
+
    │
+   
    │ Create Transaction
+   
    ↓
+
 Shared Transaction
+
    │
+   
    ↓
+
 User B
+
    │
+   
    ├── Accept
+   
    │
+   
    └── Dispute
+
 
 The transaction remains associated with both users while maintaining ownership and authorization rules.
 
@@ -219,38 +267,38 @@ PKR 250,000
 
 ---
 
-Production database:
-
-FinanceTracker
-
-The database runs inside the existing MongoDB Atlas cluster while remaining logically separated from other application databases.
-
-MongoDB Cluster
-│
-├── vaultly
-│
-└── FinanceTracker
-
----
-
 ## ⚙️ Backend Architecture
 
 The backend follows a modular REST API architecture.
 
 Request
+
    ↓
+
 Route
+
    ↓
+
 Authentication Middleware
+
    ↓
+
 Authorization
+
    ↓
+
 Controller
+
    ↓
+
 Service
+
    ↓
+
 Mongoose Model
+
    ↓
+
 MongoDB
 
 This separation keeps business logic away from route definitions and improves maintainability.
@@ -334,32 +382,59 @@ Financial tables and forms are designed to remain usable on smaller screens.
 
 ## 📂 Project Structure
 Finance-Tracker/
+
 │
+
 ├── backend/
+
 │   ├── controllers/
+
 │   ├── middleware/
+
 │   ├── models/
+
 │   ├── routes/
+
 │   ├── services/
+
 │   ├── utils/
+
 │   ├── server.js
+
 │   └── package.json
+
 │
+
 ├── frontend/
+
 │   ├── src/
+
 │   │   ├── components/
+
 │   │   ├── pages/
+
 │   │   ├── services/
+
 │   │   ├── hooks/
+
 │   │   ├── utils/
+
 │   │   ├── assets/
+
 │   │   └── App.jsx
+
 │   │
+
 │   ├── public/
+
 │   └── package.json
+
 │
+
 ├── .gitignore
+
 └── README.md
+
 
 ---
 
@@ -368,17 +443,28 @@ Finance-Tracker/
 The project follows a protected production branch workflow.
 
 development
+     
       │
+      
       ↓
+
 Development & Testing
+
       │
+      
       ↓
+
 Pull Request
+
       │
+      
       ↓
-main
+    main
+    
       │
+     
       ↓
+
 Production Deployment
 
 ---
@@ -417,7 +503,9 @@ This project is developed for personal/business financial management purposes.
 
 Unauthorized redistribution or commercial reuse of the source code is not permitted without permission from the project owner.
 
-👤 Developed By
+---
+
+## 👤 Developed By
 
 Muzamil Saleem
 

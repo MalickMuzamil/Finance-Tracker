@@ -53,28 +53,39 @@ export default function Login() {
             </div>
           </FormField>
 
-          <FormField label="Password" required>
-            <div className="inputWithIcon">
-              <Lock size={16} className="inputIcon" />
-              <input
-                placeholder="Enter password"
-                type={showPassword ? 'text' : 'password'}
-                className="hasToggle"
-                required
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
-              <button
-                type="button"
-                className="passwordToggleBtn"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          <div className="field">
+            <div className="authFieldHeader">
+              <label className="fieldLabel" style={{ margin: 0 }}>
+                <span>Password</span>
+                <span className="requiredStar">*</span>
+              </label>
+              <Link to="/forgot-password" className="authForgotLink">
+                Forgot password?
+              </Link>
             </div>
-          </FormField>
+            <div className="inputControlWrapper">
+              <div className="inputWithIcon">
+                <Lock size={16} className="inputIcon" />
+                <input
+                  placeholder="Enter password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="hasToggle"
+                  required
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="passwordToggleBtn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+          </div>
 
           <Button type="submit" variant="primary" loading={loading} className="wFull mt-2">
             Sign In

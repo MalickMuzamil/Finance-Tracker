@@ -2181,6 +2181,35 @@ tbody tr:hover {
   padding-left: 42px;
 }
 
+.inputWithIcon input.hasToggle {
+  padding-right: 42px;
+}
+
+.passwordToggleBtn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+  z-index: 2;
+}
+
+.passwordToggleBtn:hover {
+  color: var(--text);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.passwordToggleBtn:active {
+  transform: scale(0.92);
+}
+
 .wFull {
   width: 100%;
 }

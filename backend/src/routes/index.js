@@ -1,7 +1,7 @@
 import express from 'express';
 import { auth, requireSuperAdmin } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
-import { signup, login, me } from '../controllers/auth.js';
+import { signup, login, me, forgotPassword, resetPassword } from '../controllers/auth.js';
 import * as c from '../controllers/finance.js';
 import asyncH from '../utils/async.js';
 
@@ -11,6 +11,8 @@ const r = express.Router();
 r.post('/auth/signup', authLimiter, asyncH(signup));
 r.post('/auth/login', authLimiter, asyncH(login));
 r.get('/auth/me', auth, asyncH(me));
+r.post('/auth/forgot-password', authLimiter, asyncH(forgotPassword));
+r.post('/auth/reset-password/:token?', authLimiter, asyncH(resetPassword));
 
 // Dashboard route
 r.get('/dashboard', auth, asyncH(c.dashboard));

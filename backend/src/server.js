@@ -113,6 +113,11 @@ app.use('/api', apiLimiter);
 // Mount routes
 app.use('/api', routes);
 
+// 404 Handler for undefined API routes
+app.use((req, res) => {
+  res.status(404).json({ message: `Route '${req.originalUrl}' not found.` });
+});
+
 // Global error handler
 app.use(errorHandler);
 

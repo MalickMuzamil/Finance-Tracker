@@ -1,15 +1,18 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ProtectedRoute, PublicOnlyRoute } from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Vehicles from './pages/Vehicles';
 import Finance from './pages/Finance';
 import Lend from './pages/Lend';
 import Admin from './pages/Admin';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -21,6 +24,9 @@ export default function App() {
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
             </Route>
 
             {/* Authenticated user routes */}
@@ -38,8 +44,9 @@ export default function App() {
               </Route>
             </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Custom Theme 404 Fallback */}
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </ToastProvider>
       </AuthProvider>

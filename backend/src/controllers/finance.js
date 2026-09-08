@@ -1,17 +1,17 @@
-const mongoose = require('mongoose');
-const Vehicle = require('../models/Vehicle');
-const Transaction = require('../models/Transaction');
-const Lend = require('../models/Lend');
-const User = require('../models/User');
-const { superAdminEmail } = require('../config/env');
-const { buildDateFilter } = require('../utils/dateFilter');
+import mongoose from 'mongoose';
+import Vehicle from '../models/Vehicle.js';
+import Transaction from '../models/Transaction.js';
+import Lend from '../models/Lend.js';
+import User from '../models/User.js';
+import { superAdminEmail } from '../config/env.js';
+import { buildDateFilter } from '../utils/dateFilter.js';
 
 const toObjectId = (id) => new mongoose.Types.ObjectId(String(id));
 
 // ==========================================
 // VEHICLES CONTROLLER (PAGINATION + DEEP TRACKING)
 // ==========================================
-async function vehicles(req, res) {
+export async function vehicles(req, res) {
   if (req.method === 'GET') {
     const { startDate, endDate, type, category, search, page, limit = 10 } = req.query;
     const dateQuery = buildDateFilter(startDate, endDate, 'date');
@@ -109,7 +109,7 @@ async function vehicles(req, res) {
   return res.status(201).json(created);
 }
 
-async function vehicleUpdate(req, res) {
+export async function vehicleUpdate(req, res) {
   const {
     type,
     name,
@@ -164,7 +164,7 @@ async function vehicleUpdate(req, res) {
   return res.json(updated);
 }
 
-async function vehicleDelete(req, res) {
+export async function vehicleDelete(req, res) {
   const r = await Vehicle.deleteOne({ _id: req.params.id, userId: req.user._id });
   if (!r.deletedCount) {
     return res.status(404).json({ message: 'Vehicle record not found.' });
@@ -175,7 +175,7 @@ async function vehicleDelete(req, res) {
 // ==========================================
 // TRANSACTIONS CONTROLLER (PAGINATION + SEARCH)
 // ==========================================
-async function transactions(req, res) {
+export async function transactions(req, res) {
   if (req.method === 'GET') {
     const { startDate, endDate, kind, category, search, page, limit = 10 } = req.query;
     const dateQuery = buildDateFilter(startDate, endDate, 'date');
@@ -242,7 +242,7 @@ async function transactions(req, res) {
   return res.status(201).json(created);
 }
 
-async function transactionUpdate(req, res) {
+export async function transactionUpdate(req, res) {
   const { kind, category, amount, date, note } = req.body;
   if (!['INCOME', 'EXPENSE'].includes(kind) || Number(amount) < 0 || !date) {
     return res.status(400).json({ message: 'Invalid transaction data.' });
@@ -272,7 +272,7 @@ async function transactionUpdate(req, res) {
   return res.json(updated);
 }
 
-async function transactionDelete(req, res) {
+export async function transactionDelete(req, res) {
   const r = await Transaction.deleteOne({ _id: req.params.id, userId: req.user._id });
   if (!r.deletedCount) {
     return res.status(404).json({ message: 'Transaction not found.' });
@@ -283,7 +283,7 @@ async function transactionDelete(req, res) {
 // ==========================================
 // ADMIN USER MANAGEMENT (STRICT SUPER ADMIN PROTECTION)
 // ==========================================
-async function users(req, res) {
+export async function users(req, res) {
   const { search, page, limit = 10 } = req.query;
   const query = {};
 
@@ -323,7 +323,7 @@ async function users(req, res) {
   return res.json({ count: list.length, total: list.length, users: list });
 }
 
-async function toggleUserStatus(req, res) {
+export async function toggleUserStatus(req, res) {
   const targetUser = await User.findById(req.params.id);
   if (!targetUser) {
     return res.status(404).json({ message: 'User not found.' });
@@ -359,7 +359,7 @@ async function toggleUserStatus(req, res) {
   });
 }
 
-async function deleteUser(req, res) {
+export async function deleteUser(req, res) {
   const targetUser = await User.findById(req.params.id);
   if (!targetUser) {
     return res.status(404).json({ message: 'User not found.' });
@@ -390,7 +390,7 @@ async function deleteUser(req, res) {
   return res.json({ message: `User ${targetUser.name} (${targetUser.email}) and related records deleted successfully.` });
 }
 
-async function searchUsers(req, res) {
+export async function searchUsers(req, res) {
   const q = (req.query.q || '').trim();
   if (q.length < 2) return res.json([]);
   const list = await User.find(
@@ -410,7 +410,7 @@ async function searchUsers(req, res) {
 // ==========================================
 // LEN DEN (PAGINATION + EXTERNAL UDHAAR)
 // ==========================================
-async function lends(req, res) {
+export async function lends(req, res) {
   if (req.method === 'GET') {
     const { startDate, endDate, status, search, direction, page, limit = 10 } = req.query;
     const dateQuery = buildDateFilter(startDate, endDate, 'date');
@@ -567,7 +567,7 @@ async function lends(req, res) {
   return res.status(201).json(populated);
 }
 
-async function lendAction(req, res) {
+export async function lendAction(req, res) {
   const lend = await Lend.findById(req.params.id);
   if (!lend) {
     return res.status(404).json({ message: 'Lend record not found.' });
@@ -615,7 +615,7 @@ async function lendAction(req, res) {
   return res.json(updated);
 }
 
-async function lendDelete(req, res) {
+export async function lendDelete(req, res) {
   const lend = await Lend.findById(req.params.id);
   if (!lend) {
     return res.status(404).json({ message: 'Lend record not found.' });
@@ -637,7 +637,7 @@ async function lendDelete(req, res) {
 // ==========================================
 // DASHBOARD CONTROLLER
 // ==========================================
-async function dashboard(req, res) {
+export async function dashboard(req, res) {
   const { startDate, endDate } = req.query;
   const dateQuery = buildDateFilter(startDate, endDate, 'date');
   const userOid = toObjectId(req.user._id);
@@ -723,7 +723,7 @@ async function dashboard(req, res) {
   });
 }
 
-module.exports = {
+export default {
   vehicles,
   vehicleUpdate,
   vehicleDelete,

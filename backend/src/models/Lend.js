@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const schema = new mongoose.Schema(
   {
@@ -27,4 +27,5 @@ const schema = new mongoose.Schema(
 schema.index({ fromUserId: 1, toUserId: 1 });
 schema.index({ createdBy: 1, isExternal: 1 });
 
-module.exports = mongoose.model('Lend', schema);
+const Lend = mongoose.model('Lend', schema);
+export default Lend;

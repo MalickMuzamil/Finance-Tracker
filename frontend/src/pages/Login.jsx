@@ -4,10 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const toast = useToast();
@@ -57,11 +58,21 @@ export default function Login() {
               <Lock size={16} className="inputIcon" />
               <input
                 placeholder="Enter password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
+                className="hasToggle"
                 required
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
+              <button
+                type="button"
+                className="passwordToggleBtn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </FormField>
 

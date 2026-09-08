@@ -5,7 +5,7 @@
  * - endDate is expanded to end of day (23:59:59.999)
  * Invalid dates are safely ignored.
  */
-function buildDateFilter(startDate, endDate, fieldName = 'date') {
+export function buildDateFilter(startDate, endDate, fieldName = 'date') {
   if (!startDate && !endDate) return {};
 
   const filter = {};
@@ -40,4 +40,4 @@ function buildDateFilter(startDate, endDate, fieldName = 'date') {
   return filter;
 }
 
-module.exports = { buildDateFilter };
+export default { buildDateFilter };

@@ -3,8 +3,10 @@ import Vehicle from '../models/Vehicle.js';
 import Transaction from '../models/Transaction.js';
 import Lend from '../models/Lend.js';
 import User from '../models/User.js';
+import Category from '../models/Category.js';
 import { superAdminEmail } from '../config/env.js';
-import { buildDateFilter } from '../utils/dateFilter.js';
+import { buildDateFilter, getMonthYearPkt, getMonthDateRangePkt } from '../utils/dateFilter.js';
+import { escapeRegex } from '../utils/regex.js';
 
 const toObjectId = (id) => new mongoose.Types.ObjectId(String(id));
 
@@ -26,7 +28,7 @@ export async function vehicles(req, res) {
       query.expenseCategory = category.toUpperCase();
     }
     if (search && search.trim()) {
-      const q = search.trim();
+      const q = escapeRegex(search.trim());
       query.$or = [
         { name: { $regex: q, $options: 'i' } },
         { note: { $regex: q, $options: 'i' } },
@@ -173,28 +175,69 @@ export async function vehicleDelete(req, res) {
 }
 
 // ==========================================
-// TRANSACTIONS CONTROLLER (PAGINATION + SEARCH)
+// TRANSACTIONS CONTROLLER (PAGINATION + SEARCH + EXPENSE TYPE)
 // ==========================================
 export async function transactions(req, res) {
   if (req.method === 'GET') {
-    const { startDate, endDate, kind, category, search, page, limit = 10 } = req.query;
+    const {
+      startDate,
+      endDate,
+      monthYear,
+      kind,
+      expenseType,
+      category,
+      paymentMethod,
+      search,
+      page,
+      limit = 10,
+    } = req.query;
+
     const dateQuery = buildDateFilter(startDate, endDate, 'date');
     const query = {
       userId: req.user._id,
       ...dateQuery,
     };
+
+    if (monthYear && /^\d{4}-\d{2}$/.test(monthYear.trim())) {
+      query.monthYear = monthYear.trim();
+    }
+
     if (kind && ['INCOME', 'EXPENSE'].includes(kind.toUpperCase())) {
       query.kind = kind.toUpperCase();
     }
-    if (category && category.trim()) {
-      query.category = { $regex: category.trim(), $options: 'i' };
+
+    if (expenseType && expenseType !== 'ALL') {
+      const types = expenseType.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean);
+      if (types.length === 1) {
+        query.expenseType = types[0];
+      } else if (types.length > 1) {
+        query.expenseType = { $in: types };
+      }
     }
+
+    if (paymentMethod && paymentMethod !== 'ALL') {
+      query.paymentMethod = paymentMethod.toUpperCase();
+    }
+
+    if (category && category.trim() && category !== 'ALL') {
+      query.category = { $regex: escapeRegex(category.trim()), $options: 'i' };
+    }
+
     if (search && search.trim()) {
-      const q = search.trim();
-      query.$or = [
+      const q = escapeRegex(search.trim());
+      const conditions = [
         { category: { $regex: q, $options: 'i' } },
         { note: { $regex: q, $options: 'i' } },
+        { expenseType: { $regex: q, $options: 'i' } },
+        { paymentMethod: { $regex: q, $options: 'i' } },
       ];
+
+      const numSearch = Number(search.trim());
+      if (!isNaN(numSearch) && numSearch > 0) {
+        conditions.push({ amount: numSearch });
+      }
+
+      query.$or = conditions;
     }
 
     if (page) {
@@ -220,9 +263,10 @@ export async function transactions(req, res) {
     return res.json(list);
   }
 
-  const { kind, category, amount, date, note } = req.body;
+  // POST: Create transaction
+  const { kind, category, amount, date, note, expenseType, paymentMethod, isSalary } = req.body;
   if (!['INCOME', 'EXPENSE'].includes(kind) || Number(amount) < 0 || !date) {
-    return res.status(400).json({ message: 'Invalid transaction data.' });
+    return res.status(400).json({ message: 'Invalid transaction data. Kind, non-negative amount and date are required.' });
   }
 
   const parsedDate = new Date(date);
@@ -230,12 +274,35 @@ export async function transactions(req, res) {
     return res.status(400).json({ message: 'Invalid date format.' });
   }
 
+  const determinedMonthYear = getMonthYearPkt(parsedDate);
+
+  // Determine appropriate default expenseType if not provided
+  let determinedExpenseType = 'GENERAL';
+  if (expenseType && ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY'].includes(expenseType.toUpperCase())) {
+    determinedExpenseType = expenseType.toUpperCase();
+  } else if (kind === 'INCOME') {
+    determinedExpenseType = isSalary || category?.toLowerCase()?.includes('salary') ? 'SALARY' : 'GENERAL';
+  } else if (category) {
+    const catLower = category.toLowerCase();
+    if (['lunch', 'dinner', 'nashta', 'breakfast', 'chai', 'food', 'snack', 'grocery', 'ration', 'restaurant', 'bakery', 'fruit'].some((w) => catLower.includes(w))) {
+      determinedExpenseType = 'FOOD';
+    } else if (['puncture', 'repair', 'bill', 'wifi', 'internet', 'gas', 'electric', 'water', 'medical', 'laundry', 'grooming', 'petrol'].some((w) => catLower.includes(w))) {
+      determinedExpenseType = 'DAILY';
+    }
+  }
+
   const created = await Transaction.create({
     userId: req.user._id,
     kind,
+    expenseType: determinedExpenseType,
     category: (category || 'General').trim(),
     amount: Number(amount),
     date: parsedDate,
+    monthYear: determinedMonthYear,
+    paymentMethod: paymentMethod && ['CASH', 'BANK_TRANSFER', 'CARD', 'JAZZCASH', 'EASYPAISA', 'OTHER'].includes(paymentMethod.toUpperCase())
+      ? paymentMethod.toUpperCase()
+      : 'CASH',
+    isSalary: Boolean(isSalary || determinedExpenseType === 'SALARY'),
     note: (note || '').trim(),
   });
 
@@ -243,7 +310,7 @@ export async function transactions(req, res) {
 }
 
 export async function transactionUpdate(req, res) {
-  const { kind, category, amount, date, note } = req.body;
+  const { kind, category, amount, date, note, expenseType, paymentMethod, isSalary } = req.body;
   if (!['INCOME', 'EXPENSE'].includes(kind) || Number(amount) < 0 || !date) {
     return res.status(400).json({ message: 'Invalid transaction data.' });
   }
@@ -253,15 +320,28 @@ export async function transactionUpdate(req, res) {
     return res.status(400).json({ message: 'Invalid date format.' });
   }
 
+  const updateData = {
+    kind,
+    category: (category || 'General').trim(),
+    amount: Number(amount),
+    date: parsedDate,
+    monthYear: getMonthYearPkt(parsedDate),
+    note: (note || '').trim(),
+  };
+
+  if (expenseType && ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY'].includes(expenseType.toUpperCase())) {
+    updateData.expenseType = expenseType.toUpperCase();
+  }
+  if (paymentMethod && ['CASH', 'BANK_TRANSFER', 'CARD', 'JAZZCASH', 'EASYPAISA', 'OTHER'].includes(paymentMethod.toUpperCase())) {
+    updateData.paymentMethod = paymentMethod.toUpperCase();
+  }
+  if (typeof isSalary === 'boolean') {
+    updateData.isSalary = isSalary;
+  }
+
   const updated = await Transaction.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
-    {
-      kind,
-      category: (category || 'General').trim(),
-      amount: Number(amount),
-      date: parsedDate,
-      note: (note || '').trim(),
-    },
+    updateData,
     { new: true }
   );
 
@@ -281,19 +361,323 @@ export async function transactionDelete(req, res) {
 }
 
 // ==========================================
-// ADMIN USER MANAGEMENT (STRICT SUPER ADMIN PROTECTION)
+// CATEGORIES CONTROLLER (SEARCHABLE + CREATABLE)
+// ==========================================
+export async function getCategories(req, res) {
+  const { type, search } = req.query;
+  const query = {};
+
+  if (type && type !== 'ALL') {
+    query.type = type.toUpperCase();
+  }
+
+  if (search && search.trim()) {
+    const q = escapeRegex(search.trim());
+    query.name = { $regex: q, $options: 'i' };
+  }
+
+  // Return default + user created categories sorted alphabetically
+  const list = await Category.find(query).sort({ isDefault: -1, name: 1 });
+  return res.json(list);
+}
+
+export async function createCategory(req, res) {
+  const { name, type = 'DAILY', icon = '', color = '' } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: 'Category name is required.' });
+  }
+
+  const trimmed = name.trim();
+  const lower = trimmed.toLowerCase();
+
+  // Case-insensitive duplicate check
+  const existing = await Category.findOne({ nameLower: lower });
+  if (existing) {
+    return res.status(200).json(existing);
+  }
+
+  const validTypes = ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'INCOME', 'UTILITY'];
+  const safeType = validTypes.includes((type || '').toUpperCase()) ? type.toUpperCase() : 'DAILY';
+
+  const created = await Category.create({
+    name: trimmed,
+    nameLower: lower,
+    type: safeType,
+    icon: (icon || '').trim(),
+    color: (color || '').trim(),
+    isDefault: false,
+    createdBy: req.user._id,
+  });
+
+  return res.status(201).json(created);
+}
+
+// ==========================================
+// MONTHLY FINANCIAL SUMMARY & SAVINGS LEDGER
+// ==========================================
+export async function monthlySummary(req, res) {
+  const currentMonth = getMonthYearPkt();
+  const targetMonth = req.query.month && /^\d{4}-\d{2}$/.test(req.query.month.trim())
+    ? req.query.month.trim()
+    : currentMonth;
+
+  // Retrieve user transactions, vehicles and lends
+  const [allTransactions, allVehicles, allLends] = await Promise.all([
+    Transaction.find({ userId: req.user._id }),
+    Vehicle.find({ userId: req.user._id }),
+    Lend.find({
+      $or: [
+        { fromUserId: req.user._id },
+        { toUserId: req.user._id },
+        { createdBy: req.user._id, isExternal: true },
+      ],
+      status: { $ne: 'DISPUTED' },
+    }),
+  ]);
+
+  const monthlyData = {};
+
+  const ensureMonth = (m) => {
+    if (!monthlyData[m]) {
+      monthlyData[m] = {
+        income: 0,
+        salaryIncome: 0,
+        otherIncome: 0,
+        foodExpenses: 0,
+        dailyExpenses: 0,
+        generalExpenses: 0,
+        vehicleExpenses: 0,
+        lendGiven: 0,
+        lendReceived: 0,
+        foodCount: 0,
+        dailyCount: 0,
+        transactionCount: 0,
+        foodSubCategories: {},
+        dailySubCategories: {},
+      };
+    }
+    return monthlyData[m];
+  };
+
+  allTransactions.forEach((t) => {
+    const m = t.monthYear || getMonthYearPkt(t.date);
+    const mObj = ensureMonth(m);
+    const amt = Number(t.amount) || 0;
+
+    if (t.kind === 'INCOME') {
+      mObj.income += amt;
+      if (t.isSalary || t.expenseType === 'SALARY' || t.category?.toLowerCase()?.includes('salary')) {
+        mObj.salaryIncome += amt;
+      } else {
+        mObj.otherIncome += amt;
+      }
+    } else {
+      mObj.transactionCount += 1;
+      if (t.expenseType === 'FOOD') {
+        mObj.foodExpenses += amt;
+        mObj.foodCount += 1;
+        const cat = t.category || 'Other Food';
+        mObj.foodSubCategories[cat] = (mObj.foodSubCategories[cat] || 0) + amt;
+      } else if (t.expenseType === 'DAILY' || t.expenseType === 'UTILITY') {
+        mObj.dailyExpenses += amt;
+        mObj.dailyCount += 1;
+        const cat = t.category || 'Other Daily';
+        mObj.dailySubCategories[cat] = (mObj.dailySubCategories[cat] || 0) + amt;
+      } else {
+        mObj.generalExpenses += amt;
+      }
+    }
+  });
+
+  allVehicles.forEach((v) => {
+    const m = getMonthYearPkt(v.date);
+    const mObj = ensureMonth(m);
+    mObj.vehicleExpenses += Number(v.expense) || 0;
+  });
+
+  allLends.forEach((l) => {
+    const m = getMonthYearPkt(l.date);
+    const mObj = ensureMonth(m);
+    const isSender = String(l.fromUserId?._id || l.fromUserId) === String(req.user._id);
+    const isReceiver = String(l.toUserId?._id || l.toUserId) === String(req.user._id);
+    if (isSender) mObj.lendGiven += (l.amount || 0);
+    if (isReceiver) mObj.lendReceived += (l.amount || 0);
+  });
+
+  // Ensure targetMonth exists in the data set
+  ensureMonth(targetMonth);
+
+  // Chronologically sort all months
+  const sortedMonths = Object.keys(monthlyData).sort();
+
+  let runningSavings = 0;
+  const history = [];
+  let targetDetails = null;
+
+  for (const m of sortedMonths) {
+    const d = monthlyData[m];
+    const totalExpenses = d.foodExpenses + d.dailyExpenses + d.generalExpenses + d.vehicleExpenses;
+    const netBalance = d.income - totalExpenses;
+
+    const openingSavings = runningSavings;
+    let previousSavingsUsed = 0;
+    let currentMonthNewSavings = 0;
+    let currentIncomeConsumed = 0;
+    let currentMonthRemaining = 0;
+
+    if (totalExpenses <= d.income) {
+      currentIncomeConsumed = totalExpenses;
+      currentMonthRemaining = d.income - totalExpenses;
+      previousSavingsUsed = 0;
+      currentMonthNewSavings = d.income - totalExpenses;
+      runningSavings = openingSavings + currentMonthNewSavings;
+    } else {
+      currentIncomeConsumed = d.income;
+      currentMonthRemaining = 0;
+      const deficit = totalExpenses - d.income;
+      previousSavingsUsed = deficit;
+      currentMonthNewSavings = 0;
+      runningSavings = Math.max(0, openingSavings - deficit);
+    }
+
+    const monthRecord = {
+      month: m,
+      income: d.income,
+      salaryIncome: d.salaryIncome,
+      otherIncome: d.otherIncome,
+      expenses: totalExpenses,
+      foodExpenses: d.foodExpenses,
+      dailyExpenses: d.dailyExpenses,
+      vehicleExpenses: d.vehicleExpenses,
+      generalExpenses: d.generalExpenses,
+      netBalance,
+      openingSavings,
+      previousSavingsUsed,
+      currentMonthNewSavings,
+      currentMonthRemaining,
+      closingSavings: runningSavings,
+      isDippingIntoSavings: previousSavingsUsed > 0,
+      dippingAmount: previousSavingsUsed,
+      transactionCount: d.transactionCount,
+    };
+
+    history.push(monthRecord);
+
+    if (m === targetMonth) {
+      const topFood = Object.entries(d.foodSubCategories)
+        .map(([category, amount]) => ({ category, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+      const topDaily = Object.entries(d.dailySubCategories)
+        .map(([category, amount]) => ({ category, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+      // Days elapsed in targetMonth for average daily food spend
+      const [yStr, mStr] = targetMonth.split('-');
+      const yNum = parseInt(yStr, 10);
+      const mNum = parseInt(mStr, 10);
+      const daysInMonth = new Date(Date.UTC(yNum, mNum, 0)).getUTCDate();
+
+      let daysCount = daysInMonth;
+      if (targetMonth === currentMonth) {
+        const nowPkt = new Date(Date.now() + 5 * 60 * 60 * 1000);
+        daysCount = Math.max(1, Math.min(daysInMonth, nowPkt.getUTCDate()));
+      }
+
+      const dailyFoodAverage = daysCount > 0 ? d.foodExpenses / daysCount : 0;
+
+      // Expense breakdown percentages
+      const catBreakdown = [];
+      if (totalExpenses > 0) {
+        if (d.foodExpenses > 0) {
+          catBreakdown.push({
+            name: 'Food & Dining',
+            amount: d.foodExpenses,
+            percentage: Number(((d.foodExpenses / totalExpenses) * 100).toFixed(1)),
+            color: '#ef4444',
+          });
+        }
+        if (d.dailyExpenses > 0) {
+          catBreakdown.push({
+            name: 'Daily Misc & Utilities',
+            amount: d.dailyExpenses,
+            percentage: Number(((d.dailyExpenses / totalExpenses) * 100).toFixed(1)),
+            color: '#f97316',
+          });
+        }
+        if (d.vehicleExpenses > 0) {
+          catBreakdown.push({
+            name: 'Vehicles',
+            amount: d.vehicleExpenses,
+            percentage: Number(((d.vehicleExpenses / totalExpenses) * 100).toFixed(1)),
+            color: '#38bdf8',
+          });
+        }
+        if (d.generalExpenses > 0) {
+          catBreakdown.push({
+            name: 'Home Finance & Other',
+            amount: d.generalExpenses,
+            percentage: Number(((d.generalExpenses / totalExpenses) * 100).toFixed(1)),
+            color: '#a855f7',
+          });
+        }
+      }
+
+      targetDetails = {
+        ...monthRecord,
+        foodAnalytics: {
+          totalFood: d.foodExpenses,
+          dailyAverage: Math.round(dailyFoodAverage),
+          transactionCount: d.foodCount,
+          topCategories: topFood,
+        },
+        dailyAnalytics: {
+          totalDaily: d.dailyExpenses,
+          transactionCount: d.dailyCount,
+          topCategories: topDaily,
+        },
+        categoryBreakdown: catBreakdown,
+      };
+    }
+  }
+
+  return res.json({
+    selectedMonth: targetMonth,
+    monthlyMetrics: targetDetails,
+    savingsLedger: {
+      openingSavings: targetDetails?.openingSavings || 0,
+      lastMonthSavings: targetDetails?.openingSavings || 0,
+      availableFunds: (targetDetails?.openingSavings || 0) + (targetDetails?.income || 0),
+      previousSavingsUsed: targetDetails?.previousSavingsUsed || 0,
+      currentMonthNewSavings: targetDetails?.currentMonthNewSavings || 0,
+      totalAccumulatedSavings: targetDetails?.closingSavings || 0,
+      isDippingIntoSavings: Boolean(targetDetails?.isDippingIntoSavings),
+      dippingAmount: targetDetails?.dippingAmount || 0,
+    },
+    savingsHistory: [...history].reverse(), // most recent month first
+  });
+}
+
+// ==========================================
+// ADMIN & USER SEARCH CONTROLLER
 // ==========================================
 export async function users(req, res) {
-  const { search, page, limit = 10 } = req.query;
+  const { search, role, status, page, limit = 10 } = req.query;
   const query = {};
 
   if (search && search.trim()) {
-    const q = search.trim();
+    const q = escapeRegex(search.trim());
     query.$or = [
       { name: { $regex: q, $options: 'i' } },
       { email: { $regex: q, $options: 'i' } },
-      { role: { $regex: q, $options: 'i' } },
     ];
+  }
+  if (role && ['USER', 'SUPER_ADMIN'].includes(role.toUpperCase())) {
+    query.role = role.toUpperCase();
+  }
+  if (status && ['ACTIVE', 'DISABLED'].includes(status.toUpperCase())) {
+    query.status = status.toUpperCase();
   }
 
   if (page) {
@@ -303,24 +687,20 @@ export async function users(req, res) {
 
     const [total, list] = await Promise.all([
       User.countDocuments(query),
-      User.find(query, 'name email role status createdAt')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum),
+      User.find(query, '-passwordHash').sort({ createdAt: -1 }).skip(skip).limit(limitNum),
     ]);
 
     return res.json({
-      count: total,
+      data: list,
       total,
       page: pageNum,
       totalPages: Math.ceil(total / limitNum) || 1,
       limit: limitNum,
-      users: list,
     });
   }
 
-  const list = await User.find(query, 'name email role status createdAt').sort({ createdAt: -1 });
-  return res.json({ count: list.length, total: list.length, users: list });
+  const list = await User.find(query, '-passwordHash').sort({ createdAt: -1 });
+  return res.json(list);
 }
 
 export async function toggleUserStatus(req, res) {
@@ -329,18 +709,12 @@ export async function toggleUserStatus(req, res) {
     return res.status(404).json({ message: 'User not found.' });
   }
 
-  // STRICT SUPER ADMIN PROTECTION: Cannot disable Super Admin
-  const isSuperAdminUser =
-    targetUser.email.toLowerCase() === superAdminEmail || targetUser.role === 'SUPER_ADMIN';
-
-  if (isSuperAdminUser) {
-    return res.status(403).json({
-      message: 'Access Denied: The Super Admin account is protected and can never be disabled.',
-    });
+  if (targetUser.email.toLowerCase() === superAdminEmail.toLowerCase()) {
+    return res.status(403).json({ message: 'Root SuperAdmin status cannot be modified.' });
   }
 
   if (String(targetUser._id) === String(req.user._id)) {
-    return res.status(403).json({ message: 'You cannot disable your own active account.' });
+    return res.status(403).json({ message: 'You cannot change your own status.' });
   }
 
   const newStatus = targetUser.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
@@ -348,9 +722,9 @@ export async function toggleUserStatus(req, res) {
   await targetUser.save();
 
   return res.json({
-    message: `User status changed to ${newStatus}`,
+    message: `User status changed to ${newStatus}.`,
     user: {
-      id: targetUser._id,
+      _id: targetUser._id,
       name: targetUser.name,
       email: targetUser.email,
       role: targetUser.role,
@@ -365,21 +739,14 @@ export async function deleteUser(req, res) {
     return res.status(404).json({ message: 'User not found.' });
   }
 
-  // STRICT SUPER ADMIN PROTECTION: Cannot delete Super Admin
-  const isSuperAdminUser =
-    targetUser.email.toLowerCase() === superAdminEmail || targetUser.role === 'SUPER_ADMIN';
-
-  if (isSuperAdminUser) {
-    return res.status(403).json({
-      message: 'Access Denied: The Super Admin account is permanently protected and can never be deleted.',
-    });
+  if (targetUser.email.toLowerCase() === superAdminEmail.toLowerCase()) {
+    return res.status(403).json({ message: 'Root SuperAdmin cannot be deleted.' });
   }
 
   if (String(targetUser._id) === String(req.user._id)) {
-    return res.status(403).json({ message: 'You cannot delete your own account from here.' });
+    return res.status(403).json({ message: 'You cannot delete your own account from the admin panel.' });
   }
 
-  // Remove target user's records safely
   await Promise.all([
     User.deleteOne({ _id: targetUser._id }),
     Transaction.deleteMany({ userId: targetUser._id }),
@@ -391,7 +758,7 @@ export async function deleteUser(req, res) {
 }
 
 export async function searchUsers(req, res) {
-  const q = (req.query.q || '').trim();
+  const q = escapeRegex((req.query.q || '').trim());
   if (q.length < 2) return res.json([]);
   const list = await User.find(
     {
@@ -415,12 +782,16 @@ export async function lends(req, res) {
     const { startDate, endDate, status, search, direction, page, limit = 10 } = req.query;
     const dateQuery = buildDateFilter(startDate, endDate, 'date');
 
-    const query = {
+    const userScope = {
       $or: [
         { fromUserId: req.user._id },
         { toUserId: req.user._id },
         { createdBy: req.user._id, isExternal: true },
       ],
+    };
+
+    const query = {
+      $and: [userScope],
       ...dateQuery,
     };
 
@@ -433,12 +804,13 @@ export async function lends(req, res) {
     }
 
     if (search && search.trim()) {
-      const q = search.trim();
-      query.$or = [
-        ...query.$or,
-        { externalPersonName: { $regex: q, $options: 'i' } },
-        { note: { $regex: q, $options: 'i' } },
-      ];
+      const q = escapeRegex(search.trim());
+      query.$and.push({
+        $or: [
+          { externalPersonName: { $regex: q, $options: 'i' } },
+          { note: { $regex: q, $options: 'i' } },
+        ],
+      });
     }
 
     if (page) {
@@ -500,7 +872,6 @@ export async function lends(req, res) {
     return res.status(400).json({ message: 'Invalid date format.' });
   }
 
-  // Handle External / Unregistered Person
   if (isExternal) {
     if (!externalPersonName || !externalPersonName.trim()) {
       return res.status(400).json({ message: 'Person name is required for offline/unregistered record.' });
@@ -528,7 +899,6 @@ export async function lends(req, res) {
     return res.status(201).json(populated);
   }
 
-  // Handle Registered App User
   const targetUserId = otherUserId || toUserId;
   if (!targetUserId || String(targetUserId) === String(req.user._id)) {
     return res.status(400).json({ message: 'A valid recipient from registered users is required.' });
@@ -648,13 +1018,21 @@ export async function dashboard(req, res) {
     ...(dateQuery.date ? { date: dateQuery.date } : {}),
   });
 
-  const [incAgg, expAgg, vehAgg, lendsList] = await Promise.all([
+  const [incAgg, expAgg, foodAgg, dailyAgg, vehAgg, lendsList] = await Promise.all([
     Transaction.aggregate([
       { $match: matchCondition({ kind: 'INCOME' }) },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
     Transaction.aggregate([
       { $match: matchCondition({ kind: 'EXPENSE' }) },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    Transaction.aggregate([
+      { $match: matchCondition({ kind: 'EXPENSE', expenseType: 'FOOD' }) },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    Transaction.aggregate([
+      { $match: matchCondition({ kind: 'EXPENSE', expenseType: { $in: ['DAILY', 'UTILITY'] } }) },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
     Vehicle.aggregate([
@@ -673,6 +1051,8 @@ export async function dashboard(req, res) {
 
   const income = incAgg[0]?.total || 0;
   const expense = expAgg[0]?.total || 0;
+  const foodExpense = foodAgg[0]?.total || 0;
+  const dailyExpense = dailyAgg[0]?.total || 0;
   const car = vehAgg.find((x) => x._id === 'CAR')?.total || 0;
   const bike = vehAgg.find((x) => x._id === 'BIKE')?.total || 0;
   const totalVehicles = car + bike;
@@ -712,6 +1092,8 @@ export async function dashboard(req, res) {
   return res.json({
     income,
     expense,
+    foodExpense,
+    dailyExpense,
     car,
     bike,
     totalVehicles,
@@ -730,6 +1112,9 @@ export default {
   transactions,
   transactionUpdate,
   transactionDelete,
+  getCategories,
+  createCategory,
+  monthlySummary,
   users,
   toggleUserStatus,
   deleteUser,

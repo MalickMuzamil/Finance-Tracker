@@ -13,6 +13,7 @@ import Pagination from '../components/Pagination';
 import { formatPKR } from '../utils/currency';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
+import { useDebounce } from '../utils/debounce';
 import {
   ArrowLeftRight,
   ArrowUpRight,
@@ -68,6 +69,7 @@ export default function Lend() {
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'ACCEPTED' | 'DISPUTED' | 'SETTLED'
   const [sourceFilter, setSourceFilter] = useState('ALL'); // 'ALL' | 'REGISTERED' | 'EXTERNAL'
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [dateFilter, setDateFilter] = useState({
     preset: 'ALL_TIME',
     startDate: '',
@@ -89,7 +91,7 @@ export default function Lend() {
       if (dateFilter.endDate) params.endDate = dateFilter.endDate;
       if (statusFilter !== 'ALL') params.status = statusFilter;
       if (directionFilter !== 'ALL') params.direction = directionFilter;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
 
       const res = await api.get('/lend', { params });
 
@@ -109,7 +111,7 @@ export default function Lend() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageLimit, dateFilter, statusFilter, directionFilter, searchQuery, toast]);
+  }, [currentPage, pageLimit, dateFilter, statusFilter, directionFilter, debouncedSearch, toast]);
 
   useEffect(() => {
     loadData();

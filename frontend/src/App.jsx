@@ -8,6 +8,7 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import DailyExpenses from './pages/DailyExpenses';
 import Vehicles from './pages/Vehicles';
 import Finance from './pages/Finance';
 import Lend from './pages/Lend';
@@ -33,8 +34,9 @@ export default function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/vehicles" element={<Vehicles />} />
+                <Route path="/daily-expenses" element={<DailyExpenses />} />
                 <Route path="/finance" element={<Finance />} />
+                <Route path="/vehicles" element={<Vehicles />} />
                 <Route path="/lend" element={<Lend />} />
 
                 {/* Super Admin only route */}

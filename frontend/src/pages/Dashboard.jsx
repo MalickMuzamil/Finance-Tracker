@@ -150,6 +150,7 @@ export default function Dashboard() {
             variant="ghost"
             icon={Wrench}
             onClick={() => handleOpenQuickExpense('DAILY')}
+            className="dailyAddBtn"
           >
             + Daily Expense
           </Button>

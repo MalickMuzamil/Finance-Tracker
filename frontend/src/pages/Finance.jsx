@@ -12,6 +12,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import Pagination from '../components/Pagination';
 import CategorySelect from '../components/CategorySelect';
 import LogIncomeModal from '../components/LogIncomeModal';
+import SalaryCycleModal from '../components/SalaryCycleModal';
 import { useDebounce } from '../utils/debounce';
 import { formatPKR } from '../utils/currency';
 import { useToast } from '../components/Toast';
@@ -31,6 +32,7 @@ import {
   CreditCard,
   Calendar,
   CheckCircle2,
+  Zap,
 } from 'lucide-react';
 
 const INITIAL_FORM = {
@@ -82,6 +84,7 @@ export default function Finance() {
   // Modals state
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openIncomeModal, setOpenIncomeModal] = useState(false);
+  const [openCycleModal, setOpenCycleModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -329,11 +332,20 @@ export default function Finance() {
           <div className="savingsHeadRight">
             <Button
               variant="ghost"
+              icon={Zap}
+              size="sm"
+              onClick={() => setOpenCycleModal(true)}
+              className="cycleConfigBtn"
+            >
+              Auto-Cycle Settings
+            </Button>
+            <Button
+              variant="ghost"
               icon={History}
               size="sm"
               onClick={() => setShowSavingsHistory(!showSavingsHistory)}
             >
-              {showSavingsHistory ? 'Hide Savings History' : 'View Savings History'}
+              {showSavingsHistory ? 'Hide History' : 'Savings History'}
             </Button>
           </div>
         </div>
@@ -341,7 +353,7 @@ export default function Finance() {
         {/* Dipping into savings warning alert if expenses exceed income */}
         {ledger?.isDippingIntoSavings && (
           <div className="savingsWarningBanner">
-            <AlertTriangle size={18} className="warnIcon" />
+            <AlertTriangle size={20} className="warnIcon" />
             <div>
               <strong>Dipping into previous savings: {formatPKR(ledger.dippingAmount)}</strong>
               <p>
@@ -354,54 +366,79 @@ export default function Finance() {
 
         {/* Savings Metrics Row */}
         <div className="savingsMetricsGrid">
-          <div className="savingsMetricItem">
-            <span className="metricLabel">Current Month Income</span>
-            <span className="metricValue textGood">
+          <div className="savingsMetricItem incomeCard">
+            <div className="metricItemTop">
+              <div className="metricIconOrb orbGreen">
+                <TrendingUp size={18} />
+              </div>
+              <span className="metricLabel">This Month Income</span>
+            </div>
+            <div className="metricValue textGood">
               +{formatPKR(metrics?.income || 0)}
-            </span>
-            <span className="metricSub">
+            </div>
+            <div className="metricSub">
               Salary: {formatPKR(metrics?.salaryIncome || 0)} | Other: {formatPKR(metrics?.otherIncome || 0)}
-            </span>
+            </div>
           </div>
 
-          <div className="savingsMetricItem">
-            <span className="metricLabel">Current Month Spending</span>
-            <span className="metricValue textBad">
+          <div className="savingsMetricItem expenseCard">
+            <div className="metricItemTop">
+              <div className="metricIconOrb orbRed">
+                <TrendingDown size={18} />
+              </div>
+              <span className="metricLabel">This Month Spending</span>
+            </div>
+            <div className="metricValue textBad">
               -{formatPKR(metrics?.expenses || 0)}
-            </span>
-            <span className="metricSub">
+            </div>
+            <div className="metricSub">
               Food: {formatPKR(metrics?.foodExpenses || 0)} | Daily: {formatPKR(metrics?.dailyExpenses || 0)}
-            </span>
+            </div>
           </div>
 
-          <div className="savingsMetricItem">
-            <span className="metricLabel">Current Month Remaining</span>
-            <span className={`metricValue ${metrics?.currentMonthRemaining > 0 ? 'textGood' : 'textDim'}`}>
+          <div className="savingsMetricItem remainingCard">
+            <div className="metricItemTop">
+              <div className="metricIconOrb orbBlue">
+                <Wallet size={18} />
+              </div>
+              <span className="metricLabel">Current Remaining</span>
+            </div>
+            <div className={`metricValue ${metrics?.currentMonthRemaining > 0 ? 'textGood' : 'textDim'}`}>
               {formatPKR(metrics?.currentMonthRemaining || 0)}
-            </span>
-            <span className="metricSub">
-              {metrics?.currentMonthRemaining > 0 ? 'Unspent income' : 'All income consumed'}
-            </span>
+            </div>
+            <div className="metricSub">
+              {metrics?.currentMonthRemaining > 0 ? 'Unused monthly budget' : 'All income consumed'}
+            </div>
           </div>
 
-          <div className="savingsMetricItem">
-            <span className="metricLabel">Last Month Savings</span>
-            <span className="metricValue textGood">
+          <div className="savingsMetricItem lastMonthCard">
+            <div className="metricItemTop">
+              <div className="metricIconOrb orbAmber">
+                <History size={18} />
+              </div>
+              <span className="metricLabel">Last Month Savings</span>
+            </div>
+            <div className="metricValue textGood">
               {formatPKR(ledger?.lastMonthSavings || 0)}
-            </span>
-            <span className="metricSub">Brought forward to this month</span>
+            </div>
+            <div className="metricSub">Brought forward to this month</div>
           </div>
 
-          <div className="savingsMetricItem highlightItem">
-            <span className="metricLabel">Total Accumulated Savings</span>
-            <span className="metricValue textAccent">
+          <div className="savingsMetricItem highlightItem totalSavingsCard">
+            <div className="metricItemTop">
+              <div className="metricIconOrb orbPurple">
+                <PiggyBank size={18} />
+              </div>
+              <span className="metricLabel">Accumulated Savings</span>
+            </div>
+            <div className="metricValue textAccent">
               {formatPKR(ledger?.totalAccumulatedSavings || 0)}
-            </span>
-            <span className="metricSub">
+            </div>
+            <div className="metricSub">
               {ledger?.isDippingIntoSavings
                 ? `Reduced by ${formatPKR(ledger.dippingAmount)}`
                 : `+${formatPKR(ledger?.currentMonthNewSavings || 0)} added this month`}
-            </span>
+            </div>
           </div>
         </div>
 
@@ -699,6 +736,16 @@ export default function Finance() {
       <LogIncomeModal
         open={openIncomeModal}
         onClose={() => setOpenIncomeModal(false)}
+        onSuccess={() => {
+          loadData();
+          loadMonthlySummary();
+        }}
+      />
+
+      {/* Automated Monthly Salary Cycle Modal */}
+      <SalaryCycleModal
+        open={openCycleModal}
+        onClose={() => setOpenCycleModal(false)}
         onSuccess={() => {
           loadData();
           loadMonthlySummary();

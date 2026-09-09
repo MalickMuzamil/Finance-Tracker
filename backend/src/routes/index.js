@@ -35,6 +35,8 @@ r.post('/categories', auth, asyncH(c.createCategory));
 
 // Monthly Financial Summary & Savings Ledger
 r.get('/finance/monthly-summary', auth, asyncH(c.monthlySummary));
+r.put('/user/salary-cycle', auth, asyncH(c.updateSalaryCycle));
+r.post('/finance/trigger-cycle', auth, asyncH(c.triggerSalaryCycle));
 
 // Len Den / Shared & External Udhaar routes (with pagination)
 r.get('/lend', auth, asyncH(c.lends));

@@ -78,6 +78,7 @@ export default function Vehicles() {
   const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'CAR' | 'BIKE'
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [dateFilter, setDateFilter] = useState({
     preset: 'ALL_TIME',
     startDate: '',
@@ -98,7 +99,7 @@ export default function Vehicles() {
       if (dateFilter.endDate) params.endDate = dateFilter.endDate;
       if (typeFilter !== 'ALL') params.type = typeFilter;
       if (categoryFilter !== 'ALL') params.category = categoryFilter;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
 
       const res = await api.get('/vehicles', { params });
 
@@ -118,7 +119,7 @@ export default function Vehicles() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageLimit, dateFilter, typeFilter, categoryFilter, searchQuery, toast]);
+  }, [currentPage, pageLimit, dateFilter, typeFilter, categoryFilter, debouncedSearch, toast]);
 
   useEffect(() => {
     loadData();

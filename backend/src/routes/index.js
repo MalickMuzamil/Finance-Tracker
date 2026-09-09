@@ -23,11 +23,18 @@ r.post('/vehicles', auth, asyncH(c.vehicles));
 r.put('/vehicles/:id', auth, asyncH(c.vehicleUpdate));
 r.delete('/vehicles/:id', auth, asyncH(c.vehicleDelete));
 
-// Transactions / Home Finance routes (with pagination)
+// Transactions / Home Finance routes (with pagination & deep filtering)
 r.get('/transactions', auth, asyncH(c.transactions));
 r.post('/transactions', auth, asyncH(c.transactions));
 r.put('/transactions/:id', auth, asyncH(c.transactionUpdate));
 r.delete('/transactions/:id', auth, asyncH(c.transactionDelete));
+
+// Categories routes (searchable & dynamically creatable)
+r.get('/categories', auth, asyncH(c.getCategories));
+r.post('/categories', auth, asyncH(c.createCategory));
+
+// Monthly Financial Summary & Savings Ledger
+r.get('/finance/monthly-summary', auth, asyncH(c.monthlySummary));
 
 // Len Den / Shared & External Udhaar routes (with pagination)
 r.get('/lend', auth, asyncH(c.lends));

@@ -10,6 +10,9 @@ import LoadingState from '../components/LoadingState';
 import ErrorState from '../components/ErrorState';
 import ConfirmModal from '../components/ConfirmModal';
 import Pagination from '../components/Pagination';
+import CategorySelect from '../components/CategorySelect';
+import LogIncomeModal from '../components/LogIncomeModal';
+import { useDebounce } from '../utils/debounce';
 import { formatPKR } from '../utils/currency';
 import { useToast } from '../components/Toast';
 import {
@@ -21,21 +24,64 @@ import {
   Trash2,
   Receipt,
   Search,
+  Banknote,
+  PiggyBank,
+  History,
+  AlertTriangle,
+  CreditCard,
+  Calendar,
+  CheckCircle2,
 } from 'lucide-react';
 
 const INITIAL_FORM = {
   kind: 'EXPENSE',
-  category: 'General',
+  expenseType: 'GENERAL',
+  category: 'Household General',
   amount: '',
   date: new Date().toISOString().slice(0, 10),
+  paymentMethod: 'CASH',
   note: '',
 };
 
+const PAYMENT_METHODS = [
+  { id: 'CASH', label: 'Cash' },
+  { id: 'BANK_TRANSFER', label: 'Bank Transfer' },
+  { id: 'JAZZCASH', label: 'JazzCash' },
+  { id: 'EASYPAISA', label: 'EasyPaisa' },
+  { id: 'CARD', label: 'Card' },
+  { id: 'OTHER', label: 'Other' },
+];
+
+function getRecentMonths() {
+  const months = [];
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    months.push({ value: `${y}-${m}`, label });
+  }
+  return months;
+}
+
 export default function Finance() {
+  const availableMonths = useMemo(() => getRecentMonths(), []);
+  const [selectedMonth, setSelectedMonth] = useState(availableMonths[0]?.value || '');
+
+  // Monthly summary & savings ledger data
+  const [monthlySummaryData, setMonthlySummaryData] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [showSavingsHistory, setShowSavingsHistory] = useState(false);
+
+  // Table state
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [openModal, setOpenModal] = useState(false);
+
+  // Modals state
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [openIncomeModal, setOpenIncomeModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -51,6 +97,8 @@ export default function Finance() {
   // Filters
   const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'INCOME' | 'EXPENSE'
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   const [dateFilter, setDateFilter] = useState({
     preset: 'ALL_TIME',
     startDate: '',
@@ -59,6 +107,22 @@ export default function Finance() {
 
   const toast = useToast();
 
+  // Load Monthly Summary & Savings Ledger
+  const loadMonthlySummary = useCallback(async () => {
+    setSummaryLoading(true);
+    try {
+      const res = await api.get('/finance/monthly-summary', {
+        params: { month: selectedMonth },
+      });
+      setMonthlySummaryData(res.data || null);
+    } catch (err) {
+      console.error('Failed to load monthly financial summary:', err);
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [selectedMonth]);
+
+  // Load Transactions with debounced search
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -67,10 +131,17 @@ export default function Finance() {
         page: currentPage,
         limit: pageLimit,
       };
+
+      if (dateFilter.preset === 'ALL_TIME' || dateFilter.preset === 'THIS_MONTH' || dateFilter.preset === 'LAST_MONTH') {
+        if (!dateFilter.startDate && !dateFilter.endDate && selectedMonth) {
+          params.monthYear = selectedMonth;
+        }
+      }
+
       if (dateFilter.startDate) params.startDate = dateFilter.startDate;
       if (dateFilter.endDate) params.endDate = dateFilter.endDate;
       if (typeFilter !== 'ALL') params.kind = typeFilter;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
 
       const res = await api.get('/transactions', { params });
 
@@ -90,60 +161,62 @@ export default function Finance() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageLimit, dateFilter, typeFilter, searchQuery, toast]);
+  }, [currentPage, pageLimit, selectedMonth, dateFilter, typeFilter, debouncedSearch, toast]);
+
+  useEffect(() => {
+    loadMonthlySummary();
+  }, [loadMonthlySummary]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Computed summary metrics
-  const summary = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    rows.forEach((r) => {
-      const val = Number(r.amount) || 0;
-      if (r.kind === 'INCOME') income += val;
-      else expense += val;
-    });
-    return {
-      income,
-      expense,
-      balance: income - expense,
-      count: totalRecords,
-    };
-  }, [rows, totalRecords]);
-
+  // Handle Add Transaction
   const handleOpenAdd = () => {
     setEditingId(null);
     setForm(INITIAL_FORM);
-    setOpenModal(true);
+    setOpenAddModal(true);
   };
 
+  // Handle Edit Transaction
   const handleOpenEdit = (item) => {
     setEditingId(item._id);
     setForm({
       kind: item.kind || 'EXPENSE',
+      expenseType: item.expenseType || 'GENERAL',
       category: item.category || 'General',
       amount: item.amount || '',
       date: item.date ? new Date(item.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      paymentMethod: item.paymentMethod || 'CASH',
       note: item.note || '',
     });
-    setOpenModal(true);
+    setOpenAddModal(true);
   };
 
+  // Save Transaction
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!form.amount || Number(form.amount) <= 0) {
+      toast('Please enter a valid positive amount', 'error');
+      return;
+    }
+    if (!form.category?.trim()) {
+      toast('Please select or create a category', 'error');
+      return;
+    }
+
     setSubmitting(true);
     try {
       if (editingId) {
         await api.put(`/transactions/${editingId}`, form);
-        toast('Transaction updated successfully');
+        toast('Transaction updated successfully', 'success');
       } else {
         await api.post('/transactions', form);
-        toast('Transaction added successfully');
+        toast('Transaction added successfully', 'success');
       }
-      setOpenModal(false);
+      setOpenAddModal(false);
       loadData();
+      loadMonthlySummary();
     } catch (err) {
       toast(err.response?.data?.message || 'Operation failed', 'error');
     } finally {
@@ -151,14 +224,16 @@ export default function Finance() {
     }
   };
 
+  // Delete Transaction
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
       await api.delete(`/transactions/${deleteTarget._id}`);
-      toast('Transaction deleted');
+      toast('Transaction deleted', 'success');
       setDeleteTarget(null);
       loadData();
+      loadMonthlySummary();
     } catch (err) {
       toast(err.response?.data?.message || 'Delete failed', 'error');
     } finally {
@@ -179,15 +254,37 @@ export default function Finance() {
     }
   };
 
+  const ledger = monthlySummaryData?.savingsLedger;
+  const metrics = monthlySummaryData?.monthlyMetrics;
+
   return (
     <section className="financePage">
-      {/* Header with Title and Add Button */}
+      {/* Header with Title and Add Buttons */}
       <div className="sectionHead">
         <div>
-          <p className="eyebrow">HOME FINANCE</p>
-          <h2>Income & Expenses</h2>
+          <p className="eyebrow">HOME FINANCE & SAVINGS LEDGER</p>
+          <h2>Income, Expenses & Savings</h2>
         </div>
         <div className="sectionHeadActions">
+          {/* Month Selector */}
+          <div className="monthSelectWrap">
+            <Calendar size={15} className="monthIcon" />
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="monthSelect"
+            >
+              {availableMonths.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <DateFilter
             value={dateFilter}
             onChange={(d) => {
@@ -195,35 +292,173 @@ export default function Finance() {
               setCurrentPage(1);
             }}
           />
+
+          <Button
+            variant="ghost"
+            icon={Banknote}
+            onClick={() => setOpenIncomeModal(true)}
+            className="salaryAddBtn"
+          >
+            + Log Salary / Income
+          </Button>
+
           <Button variant="primary" icon={Plus} onClick={handleOpenAdd}>
-            Add transaction
+            + Add Transaction
           </Button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid summaryGrid">
-        <Card
-          title="Total Income"
-          value={summary.income}
-          icon={TrendingUp}
-          badge="Inflow"
-          badgeType="good"
-        />
-        <Card
-          title="Total Expenses"
-          value={summary.expense}
-          icon={TrendingDown}
-          badge="Outflow"
-          badgeType="bad"
-        />
-        <Card
-          title="Net Balance"
-          value={summary.balance}
-          icon={Wallet}
-          badge={summary.balance >= 0 ? 'Surplus' : 'Deficit'}
-          badgeType={summary.balance >= 0 ? 'good' : 'bad'}
-        />
+      {/* Monthly Savings & Financial Rollover Widget */}
+      <div className="panel savingsLedgerPanel">
+        <div className="savingsLedgerHead">
+          <div className="savingsHeadLeft">
+            <div className="savingsIconOrb">
+              <PiggyBank size={24} />
+            </div>
+            <div>
+              <h3>
+                Monthly Financial Balance —{' '}
+                <span>{availableMonths.find((m) => m.value === selectedMonth)?.label || selectedMonth}</span>
+              </h3>
+              <p className="panelSubtitle">
+                End-to-end ledger tracking salary inflow, total spending, and accumulated savings rollover.
+              </p>
+            </div>
+          </div>
+
+          <div className="savingsHeadRight">
+            <Button
+              variant="ghost"
+              icon={History}
+              size="sm"
+              onClick={() => setShowSavingsHistory(!showSavingsHistory)}
+            >
+              {showSavingsHistory ? 'Hide Savings History' : 'View Savings History'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Dipping into savings warning alert if expenses exceed income */}
+        {ledger?.isDippingIntoSavings && (
+          <div className="savingsWarningBanner">
+            <AlertTriangle size={18} className="warnIcon" />
+            <div>
+              <strong>Dipping into previous savings: {formatPKR(ledger.dippingAmount)}</strong>
+              <p>
+                Total expenses this month ({formatPKR(metrics?.expenses)}) exceeded current month income ({formatPKR(metrics?.income)}).
+                Difference of {formatPKR(ledger.dippingAmount)} has been deducted from your previous savings reserve.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Savings Metrics Row */}
+        <div className="savingsMetricsGrid">
+          <div className="savingsMetricItem">
+            <span className="metricLabel">Current Month Income</span>
+            <span className="metricValue textGood">
+              +{formatPKR(metrics?.income || 0)}
+            </span>
+            <span className="metricSub">
+              Salary: {formatPKR(metrics?.salaryIncome || 0)} | Other: {formatPKR(metrics?.otherIncome || 0)}
+            </span>
+          </div>
+
+          <div className="savingsMetricItem">
+            <span className="metricLabel">Current Month Spending</span>
+            <span className="metricValue textBad">
+              -{formatPKR(metrics?.expenses || 0)}
+            </span>
+            <span className="metricSub">
+              Food: {formatPKR(metrics?.foodExpenses || 0)} | Daily: {formatPKR(metrics?.dailyExpenses || 0)}
+            </span>
+          </div>
+
+          <div className="savingsMetricItem">
+            <span className="metricLabel">Current Month Remaining</span>
+            <span className={`metricValue ${metrics?.currentMonthRemaining > 0 ? 'textGood' : 'textDim'}`}>
+              {formatPKR(metrics?.currentMonthRemaining || 0)}
+            </span>
+            <span className="metricSub">
+              {metrics?.currentMonthRemaining > 0 ? 'Unspent income' : 'All income consumed'}
+            </span>
+          </div>
+
+          <div className="savingsMetricItem">
+            <span className="metricLabel">Last Month Savings</span>
+            <span className="metricValue textGood">
+              {formatPKR(ledger?.lastMonthSavings || 0)}
+            </span>
+            <span className="metricSub">Brought forward to this month</span>
+          </div>
+
+          <div className="savingsMetricItem highlightItem">
+            <span className="metricLabel">Total Accumulated Savings</span>
+            <span className="metricValue textAccent">
+              {formatPKR(ledger?.totalAccumulatedSavings || 0)}
+            </span>
+            <span className="metricSub">
+              {ledger?.isDippingIntoSavings
+                ? `Reduced by ${formatPKR(ledger.dippingAmount)}`
+                : `+${formatPKR(ledger?.currentMonthNewSavings || 0)} added this month`}
+            </span>
+          </div>
+        </div>
+
+        {/* Collapsible Month-by-Month Savings History */}
+        {showSavingsHistory && monthlySummaryData?.savingsHistory?.length > 0 && (
+          <div className="savingsHistorySection">
+            <h4>Historical Monthly Savings Ledger</h4>
+            <div className="historyTableWrap">
+              <table className="miniHistoryTable">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Total Income</th>
+                    <th>Total Outflow</th>
+                    <th>Month Net</th>
+                    <th>Saved / Used</th>
+                    <th>Closing Savings Reserve</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlySummaryData.savingsHistory.map((h) => {
+                    const isSelected = h.month === selectedMonth;
+                    return (
+                      <tr key={h.month} className={isSelected ? 'selectedHistoryRow' : ''}>
+                        <td>
+                          <strong>{h.month}</strong>
+                          {isSelected && <span className="activeMonthTag">Current</span>}
+                        </td>
+                        <td className="textGood">+{formatPKR(h.income)}</td>
+                        <td className="textBad">-{formatPKR(h.expenses)}</td>
+                        <td className={h.netBalance >= 0 ? 'textGood' : 'textBad'}>
+                          {h.netBalance >= 0 ? '+' : ''}{formatPKR(h.netBalance)}
+                        </td>
+                        <td>
+                          {h.previousSavingsUsed > 0 ? (
+                            <span className="pill bad">
+                              Used {formatPKR(h.previousSavingsUsed)}
+                            </span>
+                          ) : h.currentMonthNewSavings > 0 ? (
+                            <span className="pill good">
+                              Saved +{formatPKR(h.currentMonthNewSavings)}
+                            </span>
+                          ) : (
+                            <span className="pill">Balanced</span>
+                          )}
+                        </td>
+                        <td>
+                          <strong className="textAccent">{formatPKR(h.closingSavings)}</strong>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filter / Search Bar */}
@@ -248,7 +483,7 @@ export default function Finance() {
           <Search size={15} className="searchIcon" />
           <input
             type="text"
-            placeholder="Search by category or note..."
+            placeholder="Search by category, note, amount..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -258,7 +493,7 @@ export default function Finance() {
         </div>
       </div>
 
-      {/* Content Area */}
+      {/* Content Table Area */}
       {loading ? (
         <div className="panel">
           <LoadingState count={5} message="Loading financial records..." />
@@ -275,7 +510,7 @@ export default function Finance() {
             description={
               searchQuery || typeFilter !== 'ALL' || dateFilter.preset !== 'ALL_TIME'
                 ? 'No records match your active filters. Try resetting the filters or add a new transaction.'
-                : 'You have not recorded any income or expenses yet.'
+                : 'You have not recorded any income or expenses for this period yet.'
             }
             actionLabel="Add Transaction"
             onAction={handleOpenAdd}
@@ -287,9 +522,11 @@ export default function Finance() {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Type</th>
+                <th>Kind</th>
                 <th>Category</th>
+                <th>Type</th>
                 <th>Amount (PKR)</th>
+                <th>Payment</th>
                 <th>Note</th>
                 <th className="textRight">Actions</th>
               </tr>
@@ -304,11 +541,20 @@ export default function Finance() {
                     </span>
                   </td>
                   <td>
-                    <span className="categoryBadge">{r.category || 'General'}</span>
+                    <span className="categoryBadgeMain">{r.category || 'General'}</span>
+                  </td>
+                  <td>
+                    <span className="pill subPill">{r.expenseType || 'GENERAL'}</span>
                   </td>
                   <td className="amountCell">
                     <span className={r.kind === 'INCOME' ? 'textGood' : 'textBad'}>
                       {r.kind === 'INCOME' ? '+' : '-'} {formatPKR(r.amount)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="paymentBadge">
+                      <CreditCard size={12} />
+                      <span>{r.paymentMethod || 'CASH'}</span>
                     </span>
                   </td>
                   <td className="noteCell">{r.note || '—'}</td>
@@ -351,14 +597,14 @@ export default function Finance() {
 
       {/* Add / Edit Transaction Modal */}
       <Modal
-        open={openModal}
-        title={editingId ? 'Edit Transaction' : 'Add Home Finance Record'}
-        onClose={() => setOpenModal(false)}
+        open={openAddModal}
+        title={editingId ? 'Edit Transaction' : 'Add Financial Record'}
+        onClose={() => setOpenAddModal(false)}
         maxWidth="560px"
       >
         <form className="formGrid" onSubmit={handleSave}>
           <div className="formTwoCol">
-            <FormField label="Transaction Type" required>
+            <FormField label="Transaction Kind" required>
               <select
                 value={form.kind}
                 onChange={(e) => setForm({ ...form, kind: e.target.value })}
@@ -368,18 +614,30 @@ export default function Finance() {
               </select>
             </FormField>
 
-            <FormField label="Category" required>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Groceries, Electricity"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              />
+            <FormField label="Expense / Income Type">
+              <select
+                value={form.expenseType}
+                onChange={(e) => setForm({ ...form, expenseType: e.target.value })}
+              >
+                <option value="GENERAL">GENERAL</option>
+                <option value="DAILY">DAILY</option>
+                <option value="FOOD">FOOD</option>
+                <option value="UTILITY">UTILITY</option>
+                <option value="SALARY">SALARY</option>
+              </select>
             </FormField>
           </div>
 
           <div className="formTwoCol">
+            <FormField label="Category (Search or Create)" required>
+              <CategorySelect
+                value={form.category}
+                onChange={(cat) => setForm({ ...form, category: cat })}
+                type={form.kind === 'INCOME' ? 'INCOME' : form.expenseType}
+                placeholder="Search or type new category..."
+              />
+            </FormField>
+
             <FormField label="Amount in PKR" required>
               <input
                 type="number"
@@ -391,7 +649,9 @@ export default function Finance() {
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
               />
             </FormField>
+          </div>
 
+          <div className="formTwoCol">
             <FormField label="Date" required>
               <input
                 type="date"
@@ -399,6 +659,19 @@ export default function Finance() {
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
               />
+            </FormField>
+
+            <FormField label="Payment Method">
+              <select
+                value={form.paymentMethod}
+                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+              >
+                {PAYMENT_METHODS.map((pm) => (
+                  <option key={pm.id} value={pm.id}>
+                    {pm.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
           </div>
 
@@ -412,7 +685,7 @@ export default function Finance() {
           </FormField>
 
           <div className="formActions">
-            <Button variant="ghost" onClick={() => setOpenModal(false)}>
+            <Button variant="ghost" type="button" onClick={() => setOpenAddModal(false)}>
               Cancel
             </Button>
             <Button variant="primary" type="submit" loading={submitting}>
@@ -421,6 +694,16 @@ export default function Finance() {
           </div>
         </form>
       </Modal>
+
+      {/* Dedicated Log Salary / Income Modal */}
+      <LogIncomeModal
+        open={openIncomeModal}
+        onClose={() => setOpenIncomeModal(false)}
+        onSuccess={() => {
+          loadData();
+          loadMonthlySummary();
+        }}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal

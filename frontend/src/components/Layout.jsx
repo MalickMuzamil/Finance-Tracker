@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   X,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,8 +21,9 @@ export default function Layout() {
 
   const links = [
     ['/', 'Dashboard', LayoutDashboard],
-    ['/vehicles', 'Vehicles', Car],
+    ['/daily-expenses', 'Daily & Food', UtensilsCrossed],
     ['/finance', 'Home Finance', WalletCards],
+    ['/vehicles', 'Vehicles', Car],
     ['/lend', 'Len Den', ArrowLeftRight],
   ];
 
@@ -37,8 +39,9 @@ export default function Layout() {
   const getPageEyebrow = () => {
     const p = location.pathname;
     if (p === '/') return 'PERSONAL OVERVIEW';
+    if (p.startsWith('/daily-expenses')) return 'DAILY & FOOD EXPENSES';
+    if (p.startsWith('/finance')) return 'HOME FINANCE & SAVINGS';
     if (p.startsWith('/vehicles')) return 'VEHICLE EXPENSES';
-    if (p.startsWith('/finance')) return 'HOME FINANCE';
     if (p.startsWith('/lend')) return 'UDHAAR / LEN DEN';
     if (p.startsWith('/admin')) return 'ADMINISTRATION';
     return 'PERSONAL FINANCE';

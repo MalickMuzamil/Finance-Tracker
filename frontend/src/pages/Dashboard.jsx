@@ -1,10 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../services/api';
 import Card from '../components/Card';
+import Button from '../components/Button';
 import DateFilter from '../components/DateFilter';
 import LoadingState from '../components/LoadingState';
 import ErrorState from '../components/ErrorState';
 import ThreeCanvasChart from '../components/ThreeCanvasChart';
+import LogIncomeModal from '../components/LogIncomeModal';
+import Modal from '../components/Modal';
+import FormField from '../components/FormField';
+import CategorySelect from '../components/CategorySelect';
+import { formatPKR } from '../utils/currency';
 import {
   TrendingUp,
   TrendingDown,
@@ -14,11 +20,19 @@ import {
   ArrowDownLeft,
   Wallet,
   ShieldCheck,
+  PiggyBank,
+  Utensils,
+  Wrench,
+  Plus,
+  Coffee,
+  Banknote,
+  AlertTriangle,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [monthlyData, setMonthlyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dateFilter, setDateFilter] = useState({
@@ -26,6 +40,21 @@ export default function Dashboard() {
     startDate: '',
     endDate: '',
   });
+
+  // Quick Action Modals
+  const [openIncomeModal, setOpenIncomeModal] = useState(false);
+  const [openExpenseModal, setOpenExpenseModal] = useState(false);
+  const [expenseModalType, setExpenseModalType] = useState('DAILY'); // 'DAILY' | 'FOOD'
+  const [expenseForm, setExpenseForm] = useState({
+    kind: 'EXPENSE',
+    expenseType: 'DAILY',
+    category: 'Miscellaneous Daily',
+    amount: '',
+    date: new Date().toISOString().slice(0, 10),
+    paymentMethod: 'CASH',
+    note: '',
+  });
+  const [submittingExpense, setSubmittingExpense] = useState(false);
 
   const toast = useToast();
 
@@ -37,8 +66,13 @@ export default function Dashboard() {
       if (dateFilter.startDate) params.startDate = dateFilter.startDate;
       if (dateFilter.endDate) params.endDate = dateFilter.endDate;
 
-      const res = await api.get('/dashboard', { params });
-      setData(res.data);
+      const [dashRes, monthRes] = await Promise.all([
+        api.get('/dashboard', { params }),
+        api.get('/finance/monthly-summary'),
+      ]);
+
+      setData(dashRes.data);
+      setMonthlyData(monthRes.data);
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Unable to load dashboard data';
       setError(msg);
@@ -52,6 +86,42 @@ export default function Dashboard() {
     fetchDashboard();
   }, [fetchDashboard]);
 
+  const handleOpenQuickExpense = (type = 'DAILY') => {
+    setExpenseModalType(type);
+    setExpenseForm({
+      kind: 'EXPENSE',
+      expenseType: type,
+      category: type === 'FOOD' ? 'Office Lunch' : 'Bike Puncture & Tube',
+      amount: '',
+      date: new Date().toISOString().slice(0, 10),
+      paymentMethod: 'CASH',
+      note: '',
+    });
+    setOpenExpenseModal(true);
+  };
+
+  const handleSaveQuickExpense = async (e) => {
+    e.preventDefault();
+    if (!expenseForm.amount || Number(expenseForm.amount) <= 0) {
+      toast('Please enter a valid amount', 'error');
+      return;
+    }
+    setSubmittingExpense(true);
+    try {
+      await api.post('/transactions', expenseForm);
+      toast(`${expenseModalType === 'FOOD' ? 'Food' : 'Daily'} expense logged!`, 'success');
+      setOpenExpenseModal(false);
+      fetchDashboard();
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to save expense', 'error');
+    } finally {
+      setSubmittingExpense(false);
+    }
+  };
+
+  const ledger = monthlyData?.savingsLedger;
+  const metrics = monthlyData?.monthlyMetrics;
+
   return (
     <section className="dashboardPage">
       {/* Top Filter & Actions Header */}
@@ -62,6 +132,31 @@ export default function Dashboard() {
         </div>
         <div className="sectionHeadActions">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+
+          <Button
+            variant="ghost"
+            icon={Coffee}
+            onClick={() => handleOpenQuickExpense('FOOD')}
+            className="foodAddBtn"
+          >
+            + Food Expense
+          </Button>
+
+          <Button
+            variant="ghost"
+            icon={Wrench}
+            onClick={() => handleOpenQuickExpense('DAILY')}
+          >
+            + Daily Expense
+          </Button>
+
+          <Button
+            variant="primary"
+            icon={Banknote}
+            onClick={() => setOpenIncomeModal(true)}
+          >
+            + Log Salary / Income
+          </Button>
         </div>
       </div>
 
@@ -74,7 +169,7 @@ export default function Dashboard() {
           </div>
           <h2>Your Financial Pulse</h2>
           <p>
-            Track your income, household spending, vehicle expenses, and shared udhaar balances in PKR.
+            Track daily expenses, food spending, monthly salary inflows, and accumulated savings rollover in PKR.
           </p>
         </div>
         <div className="heroOrb" title="Pakistani Rupee (PKR)">
@@ -88,6 +183,89 @@ export default function Dashboard() {
         <ErrorState message={error} onRetry={fetchDashboard} />
       ) : (
         <>
+          {/* Monthly Savings & Balance Quick Summary Card */}
+          {ledger && (
+            <div className="panel savingsLedgerPanel dashboardSavingsCard">
+              <div className="savingsLedgerHead">
+                <div className="savingsHeadLeft">
+                  <div className="savingsIconOrb">
+                    <PiggyBank size={24} />
+                  </div>
+                  <div>
+                    <h3>
+                      Monthly Savings & Financial Rollover ({monthlyData?.selectedMonth || 'Current Month'})
+                    </h3>
+                    <p className="panelSubtitle">
+                      Unspent salary from last month automatically preserved in your savings reserve.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {ledger.isDippingIntoSavings && (
+                <div className="savingsWarningBanner">
+                  <AlertTriangle size={18} className="warnIcon" />
+                  <div>
+                    <strong>Dipping into previous savings: {formatPKR(ledger.dippingAmount)}</strong>
+                    <p>
+                      This month's expenses exceeded current income. Difference was withdrawn from previous savings.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="savingsMetricsGrid">
+                <div className="savingsMetricItem">
+                  <span className="metricLabel">This Month Income</span>
+                  <span className="metricValue textGood">
+                    +{formatPKR(metrics?.income || 0)}
+                  </span>
+                  <span className="metricSub">
+                    Salary: {formatPKR(metrics?.salaryIncome || 0)}
+                  </span>
+                </div>
+
+                <div className="savingsMetricItem">
+                  <span className="metricLabel">This Month Spending</span>
+                  <span className="metricValue textBad">
+                    -{formatPKR(metrics?.expenses || 0)}
+                  </span>
+                  <span className="metricSub">
+                    Food: {formatPKR(metrics?.foodExpenses || 0)} | Daily: {formatPKR(metrics?.dailyExpenses || 0)}
+                  </span>
+                </div>
+
+                <div className="savingsMetricItem">
+                  <span className="metricLabel">Current Remaining</span>
+                  <span className={`metricValue ${metrics?.currentMonthRemaining > 0 ? 'textGood' : 'textDim'}`}>
+                    {formatPKR(metrics?.currentMonthRemaining || 0)}
+                  </span>
+                  <span className="metricSub">Unused monthly budget</span>
+                </div>
+
+                <div className="savingsMetricItem">
+                  <span className="metricLabel">Last Month Savings</span>
+                  <span className="metricValue textGood">
+                    {formatPKR(ledger.lastMonthSavings)}
+                  </span>
+                  <span className="metricSub">Brought forward</span>
+                </div>
+
+                <div className="savingsMetricItem highlightItem">
+                  <span className="metricLabel">Total Accumulated Savings</span>
+                  <span className="metricValue textAccent">
+                    {formatPKR(ledger.totalAccumulatedSavings)}
+                  </span>
+                  <span className="metricSub">
+                    {ledger.isDippingIntoSavings
+                      ? `Used ${formatPKR(ledger.dippingAmount)} this month`
+                      : `+${formatPKR(ledger.currentMonthNewSavings)} added this month`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Main Financial Metrics Grid */}
           <div className="grid">
             <Card
@@ -98,11 +276,27 @@ export default function Dashboard() {
               badgeType="good"
             />
             <Card
-              title="Home Expenses"
+              title="Home & Misc Expenses"
               value={data?.expense}
               icon={TrendingDown}
               badge="Outflow"
               badgeType="bad"
+            />
+            <Card
+              title="Food Spending"
+              value={data?.foodExpense || metrics?.foodExpenses || 0}
+              icon={Utensils}
+              subtitle="Lunch, dinner, chai, groceries"
+              badge="Food & Dining"
+              badgeType="bad"
+            />
+            <Card
+              title="Daily & Utilities"
+              value={data?.dailyExpense || metrics?.dailyExpenses || 0}
+              icon={Wrench}
+              subtitle="Punctures, bills, packages"
+              badge="Daily Misc"
+              badgeType="info"
             />
             <Card
               title="Car Expenses"
@@ -154,6 +348,74 @@ export default function Dashboard() {
           />
         </>
       )}
+
+      {/* Quick Add Expense Modal */}
+      <Modal
+        open={openExpenseModal}
+        title={expenseModalType === 'FOOD' ? 'Quick Add Food Expense' : 'Quick Add Daily Expense'}
+        onClose={() => setOpenExpenseModal(false)}
+        maxWidth="520px"
+      >
+        <form onSubmit={handleSaveQuickExpense} className="formGrid">
+          <FormField label="Category (Search or Create)" required>
+            <CategorySelect
+              value={expenseForm.category}
+              onChange={(cat) => setExpenseForm({ ...expenseForm, category: cat })}
+              type={expenseModalType}
+              placeholder="Select or enter category..."
+            />
+          </FormField>
+
+          <div className="formTwoCol">
+            <FormField label="Amount in PKR" required>
+              <input
+                type="number"
+                min="1"
+                step="any"
+                required
+                placeholder="e.g. 500"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                autoFocus
+              />
+            </FormField>
+
+            <FormField label="Date" required>
+              <input
+                type="date"
+                required
+                value={expenseForm.date}
+                onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Note (Optional)">
+            <input
+              type="text"
+              placeholder="Additional details..."
+              value={expenseForm.note}
+              onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
+            />
+          </FormField>
+
+          <div className="formActions">
+            <Button variant="ghost" type="button" onClick={() => setOpenExpenseModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={submittingExpense}>
+              Save Expense
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Log Income / Salary Modal */}
+      <LogIncomeModal
+        open={openIncomeModal}
+        onClose={() => setOpenIncomeModal(false)}
+        onSuccess={fetchDashboard}
+      />
     </section>
   );
 }

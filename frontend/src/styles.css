@@ -2701,3 +2701,725 @@ tbody tr:hover {
     gap: 10px 14px;
   }
 }
+
+/* ========================================================
+   CATEGORY SELECT COMBOBOX (SEARCHABLE + DYNAMIC CREATION)
+======================================================== */
+.categorySelectWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.categorySelectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 46px;
+  padding: 0 14px;
+  background: rgba(12, 19, 36, 0.65);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.categorySelectTrigger:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.categorySelectTrigger.focused {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.categorySelectTrigger.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.selectedValue {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.placeholderValue {
+  color: var(--muted);
+}
+
+.selectCaret {
+  color: var(--muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.selectCaret.rotate {
+  transform: rotate(180deg);
+}
+
+.categorySelectDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #0b1122;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(99, 102, 241, 0.15);
+  z-index: 1200;
+  overflow: hidden;
+  animation: fadeInDown 0.15s ease-out;
+}
+
+.categorySearchBox {
+  position: relative;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.categorySearchIcon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.categorySearchInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px 0 34px;
+  background: rgba(4, 7, 17, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+.categorySearchInput:focus {
+  border-color: var(--accent);
+}
+
+.categoryList {
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.createCategoryBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  border-radius: 8px;
+  color: #a5b4fc;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.createCategoryBtn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.createIcon {
+  color: var(--accent2);
+}
+
+.sparkleIcon {
+  margin-left: auto;
+  color: #f59e0b;
+}
+
+.categoryOptionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.categoryOptionItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.categoryOptionItem.selected {
+  background: rgba(99, 102, 241, 0.18);
+  color: #fff;
+}
+
+.categoryOptionLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.categoryPill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.badgeFood {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badgeDaily {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.badgeIncome {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badgeGeneral {
+  background: rgba(100, 116, 139, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.categoryOptionName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selectedCheck {
+  color: var(--good);
+  flex-shrink: 0;
+}
+
+.categoryDropdownEmpty {
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ========================================================
+   MONTH SELECTOR & QUICK BUTTONS
+======================================================== */
+.monthSelectWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.monthIcon {
+  position: absolute;
+  left: 12px;
+  color: var(--accent2);
+  pointer-events: none;
+}
+
+.monthSelect {
+  height: 42px;
+  padding: 0 14px 0 34px;
+  background: rgba(12, 19, 36, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.monthSelect:hover, .monthSelect:focus {
+  border-color: var(--accent);
+  background: rgba(18, 28, 54, 0.85);
+}
+
+.paymentSelect {
+  height: 42px;
+  padding: 0 12px;
+  background: rgba(12, 19, 36, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.foodAddBtn {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+}
+
+.foodAddBtn:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.salaryAddBtn {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #6ee7b7 !important;
+}
+
+.salaryAddBtn:hover {
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* ========================================================
+   BADGES & PILLS
+======================================================== */
+.pillFood {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.pillDaily {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.pillUtility {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.categoryBadgeMain {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.paymentBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.subPill {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+/* ========================================================
+   SAVINGS LEDGER & FINANCIAL ROLLOVER PANEL
+======================================================== */
+.savingsLedgerPanel {
+  background: linear-gradient(135deg, rgba(16, 24, 48, 0.75), rgba(12, 18, 36, 0.85));
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  margin-bottom: 24px;
+}
+
+.dashboardSavingsCard {
+  margin-bottom: 24px;
+}
+
+.savingsLedgerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.savingsHeadLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.savingsIconOrb {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(56, 189, 248, 0.2));
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.savingsLedgerHead h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.savingsLedgerHead h3 span {
+  color: var(--accent2);
+}
+
+.savingsWarningBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.warnIcon {
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.savingsWarningBanner strong {
+  display: block;
+  font-size: 14px;
+  color: #fcd34d;
+  margin-bottom: 4px;
+}
+
+.savingsWarningBanner p {
+  font-size: 12px;
+  color: #fde68a;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.savingsMetricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.savingsMetricItem {
+  padding: 14px 16px;
+  background: rgba(4, 7, 17, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.savingsMetricItem.highlightItem {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(56, 189, 248, 0.12));
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.metricLabel {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.metricValue {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.metricSub {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.savingsHistorySection {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.savingsHistorySection h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.historyTableWrap {
+  overflow-x: auto;
+}
+
+.miniHistoryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.miniHistoryTable th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+
+.miniHistoryTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.selectedHistoryRow {
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.activeMonthTag {
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+/* ========================================================
+   VISUAL BREAKDOWN PANEL (FOOD VS DAILY VS UTILITY)
+======================================================== */
+.breakdownPanel {
+  margin-bottom: 24px;
+}
+
+.breakdownHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.totalSpentBadge {
+  font-size: 13px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  color: #fca5a5;
+}
+
+.totalSpentBadge strong {
+  color: #fff;
+  margin-left: 4px;
+}
+
+.multiProgressBar {
+  display: flex;
+  height: 12px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.progressSegment {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.breakdownCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.breakdownMetricCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(4, 7, 17, 0.45);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.metricIndicator {
+  width: 10px;
+  height: 28px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.metricName {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+}
+
+.metricAmountRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.metricVal {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.metricPct {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.topSubcategoriesRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.topSubcatCol h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subcatTag {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.foodTag {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.dailyTag {
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  color: #fdba74;
+}
+
+/* ========================================================
+   LOG INCOME MODAL STYLES
+======================================================== */
+.incomeModalHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+
+.incomeIconCircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.incomeModalHeader h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+}
+
+.incomeModalHeader p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.presetPillsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.presetPill {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.presetPill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.presetPill.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

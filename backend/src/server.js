@@ -63,20 +63,28 @@ const corsOptions = {
             return callback(null, true);
         }
 
-        // Check wildcard subdomain matches (e.g. *.vercel.app)
+        // Automatically allow any Vercel preview or production deployments
+        if (origin.endsWith('.vercel.app') || origin.includes('vercel.app')) {
+            return callback(null, true);
+        }
+
+        // Check wildcard subdomain matches (e.g. *.example.com or https://*.vercel.app)
+        const cleanOrigin = origin.replace(/^https?:\/\//, '').toLowerCase();
         const isMatched = allowedOrigins.some((allowed) => {
-            if (allowed.startsWith('*.')) {
-                const domain = allowed.slice(2);
-                return origin.endsWith(domain);
+            const cleanAllowed = allowed.replace(/^https?:\/\//, '').toLowerCase();
+            if (cleanAllowed.startsWith('*.')) {
+                const domain = cleanAllowed.slice(2);
+                return cleanOrigin.endsWith(domain);
             }
-            return false;
+            return cleanOrigin === cleanAllowed;
         });
 
         if (isMatched) {
             return callback(null, true);
         }
 
-        return callback(new Error(`CORS Error: Origin ${origin} is not allowed by CORS policy`));
+        // Return false instead of throwing an Error so express-cors gracefully rejects without crashing preflights
+        return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -87,6 +95,21 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Safe preflight handler for OPTIONS requests
+app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        const reqOrigin = req.headers.origin;
+        if (reqOrigin) {
+            res.header('Access-Control-Allow-Origin', reqOrigin);
+            res.header('Access-Control-Allow-Credentials', 'true');
+            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+        }
+        return res.sendStatus(204);
+    }
+    next();
+});
 
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
@@ -123,7 +146,15 @@ app.use(errorHandler);
 
 // Start server after DB connection
 connectDB()
-    .then(() => {
+    .then(async () => {
+        // Automatically seed default categories if not already present
+        try {
+            const { seedCategories } = await import('./config/seedCategories.js');
+            await seedCategories();
+        } catch (seedErr) {
+            console.warn('Category seeding notice:', seedErr.message);
+        }
+
         app.listen(port, () => {
             console.log(`🚀 API server running in ${nodeEnv} mode on port ${port}`);
         });

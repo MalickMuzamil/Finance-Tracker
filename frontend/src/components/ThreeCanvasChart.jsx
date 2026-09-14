@@ -22,8 +22,8 @@ export default function ThreeCanvasChart({
     { label: 'Home Expense', shortLabel: 'Home', value: Number(expense) || 0, color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.6)' },
     { label: 'Car Expense', shortLabel: 'Car', value: Number(car) || 0, color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.6)' },
     { label: 'Bike Expense', shortLabel: 'Bike', value: Number(bike) || 0, color: '#c084fc', glow: 'rgba(192, 132, 252, 0.6)' },
-    { label: 'Udhaar Diya', shortLabel: 'Diya', value: Number(given) || 0, color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.6)' },
-    { label: 'Udhaar Liya', shortLabel: 'Liya', value: Number(received) || 0, color: '#f97316', glow: 'rgba(249, 115, 22, 0.6)' },
+    { label: 'Money Lent', shortLabel: 'Lent', value: Number(given) || 0, color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.6)' },
+    { label: 'Money Borrowed', shortLabel: 'Borrowed', value: Number(received) || 0, color: '#f97316', glow: 'rgba(249, 115, 22, 0.6)' },
     { label: 'Net Cash Flow', shortLabel: 'Net', value: Number(netCashFlow) || 0, color: '#6366f1', glow: 'rgba(99, 102, 241, 0.6)' },
   ];
 

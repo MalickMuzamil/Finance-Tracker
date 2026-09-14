@@ -35,7 +35,7 @@ const INITIAL_FORM = {
   otherUserId: '',
   externalPersonName: '',
   externalPersonContact: '',
-  directionType: 'GIVEN', // 'GIVEN' (Maine Diya) or 'RECEIVED' (Maine Liya)
+  directionType: 'GIVEN', // 'GIVEN' (I Lent) or 'RECEIVED' (I Borrowed)
   amount: '',
   date: new Date().toISOString().slice(0, 10),
   note: '',
@@ -118,8 +118,7 @@ export default function Lend() {
   }, [loadData]);
 
   // Search users for modal selection
-  const searchRegisteredUsers = useCallback(async (q) => {
-    if (!q || q.trim().length < 2) return;
+  const searchRegisteredUsers = useCallback(async (q = '') => {
     setSearchingUsers(true);
     try {
       const res = await api.get('/users/search', { params: { q: q.trim() } });
@@ -135,9 +134,7 @@ export default function Lend() {
     setForm(INITIAL_FORM);
     setUserSearchText('');
     setOpenModal(true);
-    api.get('/users/search?q=a').then((r) => {
-      if (Array.isArray(r.data)) setUsers(r.data);
-    }).catch(() => {});
+    searchRegisteredUsers('');
   };
 
   const handleSave = async (e) => {
@@ -448,7 +445,7 @@ export default function Lend() {
       {/* Content */}
       {loading ? (
         <div className="panel">
-          <LoadingState count={5} message="Loading udhaar records..." />
+          <LoadingState count={5} message="Loading loan records..." />
         </div>
       ) : error ? (
         <div className="panel">
@@ -470,6 +467,7 @@ export default function Lend() {
         </div>
       ) : (
         <div className="panel tableWrap">
+          <div className="tableScroll">
           <table>
             <thead>
               <tr>
@@ -571,6 +569,7 @@ export default function Lend() {
               })}
             </tbody>
           </table>
+          </div>
 
           {/* Pagination Controls */}
           <Pagination
@@ -584,14 +583,14 @@ export default function Lend() {
         </div>
       )}
 
-      {/* Add / Share Udhaar Modal */}
+      {/* Add / Share Loan Modal */}
       <Modal
         open={openModal}
         title="Add or Share a Loan Record"
         onClose={() => setOpenModal(false)}
       >
         <form className="formGrid" onSubmit={handleSave}>
-          {/* Nature Toggle: Udhaar Diya vs Udhaar Liya */}
+          {/* Nature Toggle: Money Lent vs Money Borrowed */}
           <FormField label="Transaction Nature" required helper="Specify whether you gave money or borrowed money">
             <div className="directionToggleGrid">
               <button
@@ -724,7 +723,7 @@ export default function Lend() {
             </FormField>
           </div>
 
-          <FormField label="Note / Reference (Optional)" helper="e.g. Emergency loan, Groceries udhaar, Project split">
+          <FormField label="Note / Reference (Optional)" helper="e.g. Emergency loan, Grocery supplies, Project split">
             <input
               type="text"
               placeholder="e.g. For shop inventory purchase"
@@ -747,7 +746,7 @@ export default function Lend() {
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         open={!!deleteTarget}
-        title="Delete Udhaar Record"
+        title="Delete Loan Record"
         message={`Are you sure you want to delete this loan record of ${formatPKR(deleteTarget?.amount)}?`}
         loading={deleting}
         onConfirm={handleDelete}

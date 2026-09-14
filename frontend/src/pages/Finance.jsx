@@ -555,6 +555,7 @@ export default function Finance() {
         </div>
       ) : (
         <div className="panel tableWrap">
+          <div className="tableScroll">
           <table>
             <thead>
               <tr>
@@ -619,6 +620,7 @@ export default function Finance() {
               ))}
             </tbody>
           </table>
+          </div>
 
           {/* Pagination Controls */}
           <Pagination
@@ -660,6 +662,7 @@ export default function Finance() {
                 <option value="DAILY">DAILY</option>
                 <option value="FOOD">FOOD</option>
                 <option value="UTILITY">UTILITY</option>
+                <option value="OTHER">OTHER / MISC</option>
                 <option value="SALARY">SALARY</option>
               </select>
             </FormField>

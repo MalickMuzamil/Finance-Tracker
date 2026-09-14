@@ -59,7 +59,7 @@ export default function NotFound() {
               <WalletCards size={14} /> Finance
             </Link>
             <Link to="/lend" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <ArrowLeftRight size={14} /> Len Den
+              <ArrowLeftRight size={14} /> Lend & Borrow
             </Link>
           </div>
         )}

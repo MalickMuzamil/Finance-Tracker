@@ -7,7 +7,7 @@ const schema = new mongoose.Schema(
     kind: { type: String, enum: ['INCOME', 'EXPENSE'], required: true, index: true },
     expenseType: {
       type: String,
-      enum: ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY'],
+      enum: ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY', 'OTHER'],
       default: 'GENERAL',
       index: true,
     },

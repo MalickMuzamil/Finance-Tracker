@@ -52,15 +52,13 @@ export default function Admin() {
       if (searchQuery.trim()) params.search = searchQuery.trim();
 
       const res = await api.get('/admin/users', { params });
-      if (res.data.users) {
-        setData(res.data);
-        setTotalRecords(res.data.total ?? res.data.count ?? res.data.users.length);
-        setTotalPages(res.data.totalPages ?? 1);
-      } else if (Array.isArray(res.data)) {
-        setData({ users: res.data, count: res.data.length });
-        setTotalRecords(res.data.length);
-        setTotalPages(1);
-      }
+      const userList = res.data?.data || res.data?.users || (Array.isArray(res.data) ? res.data : []);
+      const totalCount = res.data?.total ?? res.data?.count ?? userList.length;
+      const pages = res.data?.totalPages ?? (Math.ceil(totalCount / pageLimit) || 1);
+
+      setData({ users: userList, count: totalCount });
+      setTotalRecords(totalCount);
+      setTotalPages(pages);
     } catch (e) {
       const msg = e.response?.data?.message || 'Access denied or error fetching user list';
       setError(msg);
@@ -192,6 +190,7 @@ export default function Admin() {
         </div>
       ) : (
         <div className="panel tableWrap">
+          <div className="tableScroll">
           <table>
             <thead>
               <tr>
@@ -273,6 +272,7 @@ export default function Admin() {
               })}
             </tbody>
           </table>
+          </div>
 
           {/* Pagination Controls */}
           <Pagination

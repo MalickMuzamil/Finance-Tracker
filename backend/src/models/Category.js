@@ -6,7 +6,7 @@ const schema = new mongoose.Schema(
     nameLower: { type: String, required: true, trim: true, lowercase: true },
     type: {
       type: String,
-      enum: ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'INCOME', 'UTILITY'],
+      enum: ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'INCOME', 'UTILITY', 'OTHER'],
       default: 'DAILY',
       index: true,
     },

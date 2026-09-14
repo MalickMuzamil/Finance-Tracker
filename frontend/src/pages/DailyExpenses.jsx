@@ -149,9 +149,11 @@ export default function DailyExpenses() {
         params.expenseType = 'DAILY';
       } else if (typeFilter === 'UTILITY') {
         params.expenseType = 'UTILITY';
+      } else if (typeFilter === 'OTHER') {
+        params.expenseType = 'OTHER';
       } else {
-        // Exclude general home finance if desired, or show all daily/food
-        params.expenseType = 'DAILY,FOOD,UTILITY';
+        // Exclude general home finance, show all day-to-day/food/other
+        params.expenseType = 'DAILY,FOOD,UTILITY,OTHER';
       }
 
       if (paymentFilter !== 'ALL') {
@@ -194,10 +196,13 @@ export default function DailyExpenses() {
   const handleOpenAdd = (type = 'DAILY') => {
     setEditingItem(null);
     setModalMode(type);
+    let defaultCategory = 'Bike Repair & Service';
+    if (type === 'FOOD') defaultCategory = 'Office Lunch';
+    if (type === 'OTHER') defaultCategory = 'Miscellaneous Other';
     setForm({
       ...INITIAL_FORM,
       expenseType: type,
-      category: type === 'FOOD' ? 'Office Lunch' : 'Bike Puncture & Tube',
+      category: defaultCategory,
       date: new Date().toISOString().slice(0, 10),
     });
     setOpenAddModal(true);
@@ -210,7 +215,7 @@ export default function DailyExpenses() {
     setForm({
       kind: 'EXPENSE',
       expenseType: item.expenseType || 'DAILY',
-      category: item.category || 'Miscellaneous Daily',
+      category: item.category || 'Miscellaneous Other',
       amount: item.amount || '',
       date: item.date ? new Date(item.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
       paymentMethod: item.paymentMethod || 'CASH',
@@ -273,6 +278,7 @@ export default function DailyExpenses() {
     const all = [
       ...(monthlyMetrics?.foodAnalytics?.topCategories || []),
       ...(monthlyMetrics?.dailyAnalytics?.topCategories || []),
+      ...(monthlyMetrics?.otherAnalytics?.topCategories || []),
     ];
     if (!all.length) return '—';
     all.sort((a, b) => b.amount - a.amount);
@@ -298,6 +304,8 @@ export default function DailyExpenses() {
         return 'pillFood';
       case 'UTILITY':
         return 'pillUtility';
+      case 'OTHER':
+        return 'pillOther';
       case 'DAILY':
       default:
         return 'pillDaily';
@@ -346,16 +354,25 @@ export default function DailyExpenses() {
             onClick={() => handleOpenAdd('FOOD')}
             className="foodAddBtn"
           >
-            + Add Food
+            Add Food
           </Button>
 
           <Button
             variant="ghost"
-            icon={Plus}
+            icon={Wrench}
             onClick={() => handleOpenAdd('DAILY')}
             className="dailyAddBtn"
           >
-            + Add Daily Expense
+            Add Daily Expense
+          </Button>
+
+          <Button
+            variant="ghost"
+            icon={Receipt}
+            onClick={() => handleOpenAdd('OTHER')}
+            className="miscAddBtn"
+          >
+            Add Other / Misc
           </Button>
         </div>
       </div>
@@ -381,12 +398,21 @@ export default function DailyExpenses() {
         />
 
         <Card
-          title="Daily Misc & Utilities"
+          title="Daily & Utilities"
           value={monthlyMetrics?.dailyAnalytics?.totalDaily || 0}
           icon={Wrench}
           badge="Bills & Repairs"
           badgeType="info"
           subtitle="Punctures, WiFi, load, utilities"
+        />
+
+        <Card
+          title="Other / Misc Expenses"
+          value={monthlyMetrics?.otherExpenses || monthlyMetrics?.otherAnalytics?.totalOther || 0}
+          icon={Receipt}
+          badge="Miscellaneous"
+          badgeType="info"
+          subtitle="Groceries, supplies, unplanned"
         />
 
         <Card
@@ -399,12 +425,12 @@ export default function DailyExpenses() {
         />
       </div>
 
-      {/* Visual Spending Breakdown (Food vs Daily vs Utilities vs Vehicles) */}
+      {/* Visual Spending Breakdown (Food vs Daily vs Other vs Utilities vs Vehicles) */}
       {monthlyMetrics?.categoryBreakdown && monthlyMetrics.categoryBreakdown.length > 0 && (
         <div className="panel breakdownPanel">
           <div className="breakdownHead">
             <div>
-              <h3>Is Mahine Mera Paisa Kahan Gaya?</h3>
+              <h3>Where Did My Money Go This Month?</h3>
               <p className="panelSubtitle">
                 Detailed visual distribution of your expenditures for this month.
               </p>
@@ -480,10 +506,11 @@ export default function DailyExpenses() {
       <div className="filterBar">
         <div className="typePills">
           {[
-            { id: 'ALL', label: 'All Daily & Food' },
+            { id: 'ALL', label: 'All Expenses' },
             { id: 'FOOD', label: 'Food Only' },
-            { id: 'DAILY', label: 'Daily Misc' },
+            { id: 'DAILY', label: 'Daily Expenses' },
             { id: 'UTILITY', label: 'Utilities & Bills' },
+            { id: 'OTHER', label: 'Other / Misc' },
           ].map((pill) => (
             <button
               key={pill.id}
@@ -558,6 +585,7 @@ export default function DailyExpenses() {
         </div>
       ) : (
         <div className="panel tableWrap">
+          <div className="tableScroll">
           <table>
             <thead>
               <tr>
@@ -616,6 +644,7 @@ export default function DailyExpenses() {
               ))}
             </tbody>
           </table>
+          </div>
 
           {/* Pagination */}
           <Pagination
@@ -632,7 +661,15 @@ export default function DailyExpenses() {
       {/* Add / Edit Daily & Food Expense Modal */}
       <Modal
         open={openAddModal}
-        title={editingItem ? 'Edit Expense Record' : modalMode === 'FOOD' ? 'Add Food Expense' : 'Add Daily Expense'}
+        title={
+          editingItem
+            ? 'Edit Expense Record'
+            : modalMode === 'FOOD'
+            ? 'Add Food Expense'
+            : modalMode === 'OTHER'
+            ? 'Add Other / Misc Expense'
+            : 'Add Daily Expense'
+        }
         onClose={() => setOpenAddModal(false)}
         maxWidth="560px"
       >
@@ -643,10 +680,11 @@ export default function DailyExpenses() {
                 value={form.expenseType}
                 onChange={(e) => setForm({ ...form, expenseType: e.target.value })}
               >
-                <option value="FOOD">FOOD (Lunch, Dinner, Chai, Groceries)</option>
-                <option value="DAILY">DAILY (Bike puncture, Petrol, Medical)</option>
-                <option value="UTILITY">UTILITY (WiFi, Electricity, Gas, Water)</option>
-                <option value="GENERAL">GENERAL (Other Household)</option>
+                <option value="FOOD">Food (Lunch, Dinner, Cafe, Dining)</option>
+                <option value="DAILY">Daily (Repairs, Petrol, Medical, Maintenance)</option>
+                <option value="UTILITY">Utility (WiFi, Electricity, Gas, Water)</option>
+                <option value="OTHER">Other / Misc (Groceries, Supplies, Unplanned)</option>
+                <option value="GENERAL">General (Household, Shopping, Personal)</option>
               </select>
             </FormField>
 

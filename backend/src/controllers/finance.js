@@ -278,16 +278,18 @@ export async function transactions(req, res) {
 
   // Determine appropriate default expenseType if not provided
   let determinedExpenseType = 'GENERAL';
-  if (expenseType && ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY'].includes(expenseType.toUpperCase())) {
+  if (expenseType && ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY', 'OTHER'].includes(expenseType.toUpperCase())) {
     determinedExpenseType = expenseType.toUpperCase();
   } else if (kind === 'INCOME') {
     determinedExpenseType = isSalary || category?.toLowerCase()?.includes('salary') ? 'SALARY' : 'GENERAL';
   } else if (category) {
     const catLower = category.toLowerCase();
-    if (['lunch', 'dinner', 'nashta', 'breakfast', 'chai', 'food', 'snack', 'grocery', 'ration', 'restaurant', 'bakery', 'fruit'].some((w) => catLower.includes(w))) {
+    if (['lunch', 'dinner', 'nashta', 'breakfast', 'tea', 'coffee', 'chai', 'food', 'snack', 'restaurant', 'bakery', 'fruit', 'burger', 'pizza'].some((w) => catLower.includes(w))) {
       determinedExpenseType = 'FOOD';
     } else if (['puncture', 'repair', 'bill', 'wifi', 'internet', 'gas', 'electric', 'water', 'medical', 'laundry', 'grooming', 'petrol'].some((w) => catLower.includes(w))) {
       determinedExpenseType = 'DAILY';
+    } else if (['grocery', 'ration', 'provision', 'misc', 'other', 'unplanned', 'emergency', 'shopping', 'supplies'].some((w) => catLower.includes(w))) {
+      determinedExpenseType = 'OTHER';
     }
   }
 
@@ -329,7 +331,7 @@ export async function transactionUpdate(req, res) {
     note: (note || '').trim(),
   };
 
-  if (expenseType && ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY'].includes(expenseType.toUpperCase())) {
+  if (expenseType && ['GENERAL', 'DAILY', 'FOOD', 'SALARY', 'UTILITY', 'OTHER'].includes(expenseType.toUpperCase())) {
     updateData.expenseType = expenseType.toUpperCase();
   }
   if (paymentMethod && ['CASH', 'BANK_TRANSFER', 'CARD', 'JAZZCASH', 'EASYPAISA', 'OTHER'].includes(paymentMethod.toUpperCase())) {
@@ -554,15 +556,18 @@ export async function monthlySummary(req, res) {
         otherIncome: 0,
         foodExpenses: 0,
         dailyExpenses: 0,
+        otherExpenses: 0,
         generalExpenses: 0,
         vehicleExpenses: 0,
         lendGiven: 0,
         lendReceived: 0,
         foodCount: 0,
         dailyCount: 0,
+        otherCount: 0,
         transactionCount: 0,
         foodSubCategories: {},
         dailySubCategories: {},
+        otherSubCategories: {},
       };
     }
     return monthlyData[m];
@@ -592,6 +597,11 @@ export async function monthlySummary(req, res) {
         mObj.dailyCount += 1;
         const cat = t.category || 'Other Daily';
         mObj.dailySubCategories[cat] = (mObj.dailySubCategories[cat] || 0) + amt;
+      } else if (t.expenseType === 'OTHER') {
+        mObj.otherExpenses += amt;
+        mObj.otherCount += 1;
+        const cat = t.category || 'Miscellaneous Other';
+        mObj.otherSubCategories[cat] = (mObj.otherSubCategories[cat] || 0) + amt;
       } else {
         mObj.generalExpenses += amt;
       }
@@ -625,7 +635,7 @@ export async function monthlySummary(req, res) {
 
   for (const m of sortedMonths) {
     const d = monthlyData[m];
-    const totalExpenses = d.foodExpenses + d.dailyExpenses + d.generalExpenses + d.vehicleExpenses;
+    const totalExpenses = d.foodExpenses + d.dailyExpenses + d.otherExpenses + d.generalExpenses + d.vehicleExpenses;
     const netBalance = d.income - totalExpenses;
 
     const openingSavings = runningSavings;
@@ -657,6 +667,7 @@ export async function monthlySummary(req, res) {
       expenses: totalExpenses,
       foodExpenses: d.foodExpenses,
       dailyExpenses: d.dailyExpenses,
+      otherExpenses: d.otherExpenses,
       vehicleExpenses: d.vehicleExpenses,
       generalExpenses: d.generalExpenses,
       netBalance,
@@ -678,6 +689,10 @@ export async function monthlySummary(req, res) {
         .sort((a, b) => b.amount - a.amount);
 
       const topDaily = Object.entries(d.dailySubCategories)
+        .map(([category, amount]) => ({ category, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+      const topOther = Object.entries(d.otherSubCategories)
         .map(([category, amount]) => ({ category, amount }))
         .sort((a, b) => b.amount - a.amount);
 
@@ -708,10 +723,18 @@ export async function monthlySummary(req, res) {
         }
         if (d.dailyExpenses > 0) {
           catBreakdown.push({
-            name: 'Daily Misc & Utilities',
+            name: 'Daily & Utilities',
             amount: d.dailyExpenses,
             percentage: Number(((d.dailyExpenses / totalExpenses) * 100).toFixed(1)),
             color: '#f97316',
+          });
+        }
+        if (d.otherExpenses > 0) {
+          catBreakdown.push({
+            name: 'Other & Miscellaneous',
+            amount: d.otherExpenses,
+            percentage: Number(((d.otherExpenses / totalExpenses) * 100).toFixed(1)),
+            color: '#a855f7',
           });
         }
         if (d.vehicleExpenses > 0) {
@@ -724,10 +747,10 @@ export async function monthlySummary(req, res) {
         }
         if (d.generalExpenses > 0) {
           catBreakdown.push({
-            name: 'Home Finance & Other',
+            name: 'Home & General Finance',
             amount: d.generalExpenses,
             percentage: Number(((d.generalExpenses / totalExpenses) * 100).toFixed(1)),
-            color: '#a855f7',
+            color: '#64748b',
           });
         }
       }
@@ -744,6 +767,11 @@ export async function monthlySummary(req, res) {
           totalDaily: d.dailyExpenses,
           transactionCount: d.dailyCount,
           topCategories: topDaily,
+        },
+        otherAnalytics: {
+          totalOther: d.otherExpenses,
+          transactionCount: d.otherCount,
+          topCategories: topOther,
         },
         categoryBreakdown: catBreakdown,
       };
@@ -867,23 +895,22 @@ export async function deleteUser(req, res) {
 
 export async function searchUsers(req, res) {
   const q = escapeRegex((req.query.q || '').trim());
-  if (q.length < 2) return res.json([]);
-  const list = await User.find(
-    {
-      status: 'ACTIVE',
-      _id: { $ne: req.user._id },
-      $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } },
-      ],
-    },
-    'name email role'
-  ).limit(10);
+  const filter = {
+    status: { $ne: 'DISABLED' },
+    _id: { $ne: req.user._id },
+  };
+  if (q) {
+    filter.$or = [
+      { name: { $regex: q, $options: 'i' } },
+      { email: { $regex: q, $options: 'i' } },
+    ];
+  }
+  const list = await User.find(filter, 'name email role').sort({ name: 1 }).limit(50);
   return res.json(list);
 }
 
 // ==========================================
-// LEN DEN (PAGINATION + EXTERNAL UDHAAR)
+// LOANS & BORROWING (SHARED & CONTACT RECORDS)
 // ==========================================
 export async function lends(req, res) {
   if (req.method === 'GET') {
@@ -1129,7 +1156,7 @@ export async function dashboard(req, res) {
     ...(dateQuery.date ? { date: dateQuery.date } : {}),
   });
 
-  const [incAgg, expAgg, foodAgg, dailyAgg, vehAgg, lendsList] = await Promise.all([
+  const [incAgg, expAgg, foodAgg, dailyAgg, otherAgg, vehAgg, lendsList] = await Promise.all([
     Transaction.aggregate([
       { $match: matchCondition({ kind: 'INCOME' }) },
       { $group: { _id: null, total: { $sum: '$amount' } } },
@@ -1144,6 +1171,10 @@ export async function dashboard(req, res) {
     ]),
     Transaction.aggregate([
       { $match: matchCondition({ kind: 'EXPENSE', expenseType: { $in: ['DAILY', 'UTILITY'] } }) },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    Transaction.aggregate([
+      { $match: matchCondition({ kind: 'EXPENSE', expenseType: 'OTHER' }) },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
     Vehicle.aggregate([
@@ -1164,6 +1195,7 @@ export async function dashboard(req, res) {
   const expense = expAgg[0]?.total || 0;
   const foodExpense = foodAgg[0]?.total || 0;
   const dailyExpense = dailyAgg[0]?.total || 0;
+  const otherExpense = otherAgg[0]?.total || 0;
   const car = vehAgg.find((x) => x._id === 'CAR')?.total || 0;
   const bike = vehAgg.find((x) => x._id === 'BIKE')?.total || 0;
   const totalVehicles = car + bike;
@@ -1205,6 +1237,7 @@ export async function dashboard(req, res) {
     expense,
     foodExpense,
     dailyExpense,
+    otherExpense,
     car,
     bike,
     totalVehicles,

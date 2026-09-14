@@ -3452,6 +3452,7 @@ tbody tr:hover {
    VISUAL BREAKDOWN PANEL (FOOD VS DAILY VS UTILITY)
 ======================================================== */
 .breakdownPanel {
+  padding: 24px;
   margin-bottom: 24px;
 }
 

@@ -350,9 +350,10 @@ export default function DailyExpenses() {
           </Button>
 
           <Button
-            variant="primary"
+            variant="ghost"
             icon={Plus}
             onClick={() => handleOpenAdd('DAILY')}
+            className="dailyAddBtn"
           >
             + Add Daily Expense
           </Button>

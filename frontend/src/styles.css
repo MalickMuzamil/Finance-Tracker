@@ -1500,15 +1500,17 @@ tbody tr:hover {
   transform: translateY(-1.5px);
 }
 
+/* Ghost — visible subtle border so it's never invisible */
 .btn-ghost {
   color: var(--muted, #94a3b8);
-  background: transparent;
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn-ghost:hover:not(:disabled) {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btn:disabled {
@@ -1518,52 +1520,84 @@ tbody tr:hover {
   box-shadow: none !important;
 }
 
-/* Custom Action Button Variants */
+/* ——————————————————————————————————————————————
+   CUSTOM ACTION BUTTON VARIANTS
+   Color hierarchy for the header toolbar:
+     primary  = purple/indigo (main CTA: Add Transaction)
+     foodAddBtn = cyan/teal  (Food)
+     dailyAddBtn = amber     (Daily Expense)
+     salaryAddBtn = emerald  (Log Salary/Income)
+     cycleConfigBtn = sky    (Auto-Cycle Settings)
+—————————————————————————————————————————————— */
+
+/* ⚙ Auto-Cycle Settings — sky blue */
 .cycleConfigBtn {
-  background: rgba(56, 189, 248, 0.08) !important;
+  background: rgba(14, 165, 233, 0.09) !important;
   color: #38bdf8 !important;
-  border: 1px solid rgba(56, 189, 248, 0.28) !important;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
 }
-
 .cycleConfigBtn:hover:not(:disabled) {
-  background: rgba(56, 189, 248, 0.18) !important;
-  border-color: rgba(56, 189, 248, 0.5) !important;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25) !important;
+  background: rgba(14, 165, 233, 0.18) !important;
+  border-color: rgba(14, 165, 233, 0.55) !important;
+  color: #7dd3fc !important;
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2) !important;
+  transform: translateY(-1px);
 }
 
+/* 🥗 Food Expense — vibrant cyan/teal gradient */
+.foodAddBtn {
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(8, 145, 178, 0.5) !important;
+  box-shadow: 0 3px 12px rgba(8, 145, 178, 0.25) !important;
+}
+.foodAddBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0e7490 0%, #155e75 100%) !important;
+  box-shadow: 0 5px 18px rgba(8, 145, 178, 0.4) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+/* 🔧 Daily Expense — amber/orange */
+.dailyAddBtn {
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+.dailyAddBtn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.55) !important;
+  color: #fde68a !important;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 💸 Log Salary / Income — emerald green */
 .salaryAddBtn {
-  background: rgba(16, 185, 129, 0.08) !important;
+  background: rgba(16, 185, 129, 0.09) !important;
   color: #34d399 !important;
-  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
 }
-
 .salaryAddBtn:hover:not(:disabled) {
   background: rgba(16, 185, 129, 0.18) !important;
-  border-color: rgba(16, 185, 129, 0.5) !important;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25) !important;
+  border-color: rgba(16, 185, 129, 0.55) !important;
+  color: #6ee7b7 !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2) !important;
+  transform: translateY(-1px) !important;
 }
 
-.foodAddBtn {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-.foodAddBtn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
-}
-
+/* ⚡ Trigger Cycle Now — indigo ghost */
 .triggerNowBtn {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(56, 189, 248, 0.2)) !important;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(56, 189, 248, 0.12)) !important;
   border: 1px solid rgba(99, 102, 241, 0.45) !important;
-  color: #e0e7ff !important;
+  color: #c7d2fe !important;
   font-weight: 700 !important;
 }
-
 .triggerNowBtn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(56, 189, 248, 0.3)) !important;
-  border-color: rgba(99, 102, 241, 0.6) !important;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3) !important;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(56, 189, 248, 0.22)) !important;
+  border-color: rgba(99, 102, 241, 0.65) !important;
+  color: #e0e7ff !important;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.28) !important;
+  transform: translateY(-1px) !important;
 }
 
 .spinner {
@@ -3121,6 +3155,7 @@ tbody tr:hover {
   background: linear-gradient(135deg, rgba(16, 24, 48, 0.75), rgba(12, 18, 36, 0.85));
   border: 1px solid rgba(99, 102, 241, 0.25);
   margin-bottom: 24px;
+  padding: 24px !important;
 }
 
 .dashboardSavingsCard {

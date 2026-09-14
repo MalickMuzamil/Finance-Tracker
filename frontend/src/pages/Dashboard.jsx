@@ -48,11 +48,11 @@ export default function Dashboard() {
   // Quick Action Modals
   const [openIncomeModal, setOpenIncomeModal] = useState(false);
   const [openExpenseModal, setOpenExpenseModal] = useState(false);
-  const [expenseModalType, setExpenseModalType] = useState('DAILY'); // 'DAILY' | 'FOOD'
+  const [expenseModalType, setExpenseModalType] = useState('DAILY'); // 'DAILY' | 'FOOD' | 'OTHER'
   const [expenseForm, setExpenseForm] = useState({
     kind: 'EXPENSE',
     expenseType: 'DAILY',
-    category: 'Miscellaneous Daily',
+    category: 'Bike Repair & Service',
     amount: '',
     date: new Date().toISOString().slice(0, 10),
     paymentMethod: 'CASH',
@@ -92,10 +92,13 @@ export default function Dashboard() {
 
   const handleOpenQuickExpense = (type = 'DAILY') => {
     setExpenseModalType(type);
+    let defaultCat = 'Bike Repair & Service';
+    if (type === 'FOOD') defaultCat = 'Office Lunch';
+    if (type === 'OTHER') defaultCat = 'Miscellaneous Other';
     setExpenseForm({
       kind: 'EXPENSE',
       expenseType: type,
-      category: type === 'FOOD' ? 'Office Lunch' : 'Bike Puncture & Tube',
+      category: defaultCat,
       amount: '',
       date: new Date().toISOString().slice(0, 10),
       paymentMethod: 'CASH',
@@ -113,7 +116,8 @@ export default function Dashboard() {
     setSubmittingExpense(true);
     try {
       await api.post('/transactions', expenseForm);
-      toast(`${expenseModalType === 'FOOD' ? 'Food' : 'Daily'} expense logged!`, 'success');
+      const label = expenseModalType === 'FOOD' ? 'Food' : expenseModalType === 'OTHER' ? 'Other / Misc' : 'Daily';
+      toast(`${label} expense logged!`, 'success');
       setOpenExpenseModal(false);
       fetchDashboard();
     } catch (err) {
@@ -143,7 +147,7 @@ export default function Dashboard() {
             onClick={() => handleOpenQuickExpense('FOOD')}
             className="foodAddBtn"
           >
-            + Food Expense
+            Food Expense
           </Button>
 
           <Button
@@ -152,7 +156,16 @@ export default function Dashboard() {
             onClick={() => handleOpenQuickExpense('DAILY')}
             className="dailyAddBtn"
           >
-            + Daily Expense
+            Daily Expense
+          </Button>
+
+          <Button
+            variant="ghost"
+            icon={Receipt}
+            onClick={() => handleOpenQuickExpense('OTHER')}
+            className="miscAddBtn"
+          >
+            Other / Misc
           </Button>
 
           <Button
@@ -160,7 +173,7 @@ export default function Dashboard() {
             icon={Banknote}
             onClick={() => setOpenIncomeModal(true)}
           >
-            + Log Salary / Income
+            Log Salary / Income
           </Button>
         </div>
       </div>
@@ -318,17 +331,18 @@ export default function Dashboard() {
               badgeType="good"
             />
             <Card
-              title="Home & Misc Expenses"
+              title="Total Outflow"
               value={data?.expense}
               icon={TrendingDown}
-              badge="Outflow"
+              badge="Total Outflow"
               badgeType="bad"
+              subtitle="All combined expenditures"
             />
             <Card
               title="Food Spending"
               value={data?.foodExpense || metrics?.foodExpenses || 0}
               icon={Utensils}
-              subtitle="Lunch, dinner, chai, groceries"
+              subtitle="Breakfast, lunch, dinner, cafe"
               badge="Food & Dining"
               badgeType="bad"
             />
@@ -336,8 +350,16 @@ export default function Dashboard() {
               title="Daily & Utilities"
               value={data?.dailyExpense || metrics?.dailyExpenses || 0}
               icon={Wrench}
-              subtitle="Punctures, bills, packages"
-              badge="Daily Misc"
+              subtitle="Repairs, fuel, bills, load"
+              badge="Daily & Bills"
+              badgeType="info"
+            />
+            <Card
+              title="Other & Misc"
+              value={data?.otherExpense || metrics?.otherExpenses || 0}
+              icon={Receipt}
+              subtitle="Groceries, supplies, unplanned"
+              badge="Other / Misc"
               badgeType="info"
             />
             <Card
@@ -353,20 +375,20 @@ export default function Dashboard() {
               subtitle="Fuel & Repairs"
             />
             <Card
-              title="Udhaar Diya"
+              title="Money Lent"
               value={data?.toReceive ?? data?.given}
               icon={ArrowUpRight}
               badge="To Receive"
               badgeType="good"
-              subtitle="Money Lent"
+              subtitle="Lent to others"
             />
             <Card
-              title="Udhaar Liya"
+              title="Money Borrowed"
               value={data?.toPay ?? data?.received}
               icon={ArrowDownLeft}
               badge="To Pay"
               badgeType="bad"
-              subtitle="Money Borrowed"
+              subtitle="Borrowed from others"
             />
             <Card
               title="Net Cash Flow"
@@ -394,7 +416,13 @@ export default function Dashboard() {
       {/* Quick Add Expense Modal */}
       <Modal
         open={openExpenseModal}
-        title={expenseModalType === 'FOOD' ? 'Quick Add Food Expense' : 'Quick Add Daily Expense'}
+        title={
+          expenseModalType === 'FOOD'
+            ? 'Quick Add Food Expense'
+            : expenseModalType === 'OTHER'
+            ? 'Quick Add Other / Misc Expense'
+            : 'Quick Add Daily Expense'
+        }
         onClose={() => setOpenExpenseModal(false)}
         maxWidth="520px"
       >

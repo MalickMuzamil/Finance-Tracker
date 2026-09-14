@@ -370,6 +370,7 @@ export default function Vehicles() {
         </div>
       ) : (
         <div className="panel tableWrap">
+          <div className="tableScroll">
           <table>
             <thead>
               <tr>
@@ -480,6 +481,7 @@ export default function Vehicles() {
               ))}
             </tbody>
           </table>
+          </div>
 
           {/* Pagination Controls */}
           <Pagination

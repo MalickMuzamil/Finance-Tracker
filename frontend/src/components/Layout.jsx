@@ -24,7 +24,7 @@ export default function Layout() {
     ['/daily-expenses', 'Daily & Food', UtensilsCrossed],
     ['/finance', 'Home Finance', WalletCards],
     ['/vehicles', 'Vehicles', Car],
-    ['/lend', 'Len Den', ArrowLeftRight],
+    ['/lend', 'Lend & Borrow', ArrowLeftRight],
   ];
 
   if (user?.role === 'SUPER_ADMIN') {
@@ -42,7 +42,7 @@ export default function Layout() {
     if (p.startsWith('/daily-expenses')) return 'DAILY & FOOD EXPENSES';
     if (p.startsWith('/finance')) return 'HOME FINANCE & SAVINGS';
     if (p.startsWith('/vehicles')) return 'VEHICLE EXPENSES';
-    if (p.startsWith('/lend')) return 'UDHAAR / LEN DEN';
+    if (p.startsWith('/lend')) return 'LOANS & BORROWING';
     if (p.startsWith('/admin')) return 'ADMINISTRATION';
     return 'PERSONAL FINANCE';
   };

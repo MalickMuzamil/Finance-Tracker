@@ -53,32 +53,33 @@ export default function CategorySelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter categories by type relevance and search string
+  // Filter categories strictly by type and search query
   const filteredCategories = useMemo(() => {
     let list = categories;
 
-    // If a specific type is requested (e.g. FOOD or DAILY), sort relevant ones to top
+    // Strict type isolation: Food contains ONLY Food; Other contains ONLY Other!
+    if (type && type !== 'ALL') {
+      if (type === 'DAILY') {
+        list = list.filter((c) => c.type === 'DAILY' || c.type === 'UTILITY');
+      } else {
+        list = list.filter((c) => c.type === type);
+      }
+    }
+
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((c) => c.name.toLowerCase().includes(q));
-    } else if (type && type !== 'ALL') {
-      // Show matching type first, then others
-      list = [...categories].sort((a, b) => {
-        if (a.type === type && b.type !== type) return -1;
-        if (a.type !== type && b.type === type) return 1;
-        return a.name.localeCompare(b.name);
-      });
     }
 
-    return list;
+    return [...list].sort((a, b) => a.name.localeCompare(b.name));
   }, [categories, search, type]);
 
-  // Check if search query exactly matches an existing category
+  // Check if search query exactly matches an existing category in the filtered list
   const exactMatch = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
-    return categories.some((c) => c.name.toLowerCase() === q);
-  }, [categories, search]);
+    return filteredCategories.some((c) => c.name.toLowerCase() === q);
+  }, [filteredCategories, search]);
 
   const handleSelect = (categoryName) => {
     onChange?.(categoryName);
@@ -94,7 +95,7 @@ export default function CategorySelect({
     try {
       const res = await api.post('/categories', {
         name: trimmed,
-        type: type && type !== 'ALL' ? type : 'DAILY',
+        type: type && type !== 'ALL' ? type : 'OTHER',
       });
 
       const newCategory = res.data;

@@ -38,7 +38,7 @@ r.get('/finance/monthly-summary', auth, asyncH(c.monthlySummary));
 r.put('/user/salary-cycle', auth, asyncH(c.updateSalaryCycle));
 r.post('/finance/trigger-cycle', auth, asyncH(c.triggerSalaryCycle));
 
-// Len Den / Shared & External Udhaar routes (with pagination)
+// Loans & Borrowing / Shared & Contact loan records (with pagination)
 r.get('/lend', auth, asyncH(c.lends));
 r.post('/lend', auth, asyncH(c.lends));
 r.patch('/lend/:id/status', auth, asyncH(c.lendAction));

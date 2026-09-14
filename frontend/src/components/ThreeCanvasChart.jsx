@@ -5,6 +5,9 @@ import { Sparkles } from 'lucide-react';
 export default function ThreeCanvasChart({
   income = 0,
   expense = 0,
+  foodExpense = 0,
+  dailyExpense = 0,
+  otherExpense = 0,
   car = 0,
   bike = 0,
   given = 0,
@@ -19,7 +22,9 @@ export default function ThreeCanvasChart({
 
   const data = [
     { label: 'Income', shortLabel: 'Income', value: Number(income) || 0, color: '#10b981', glow: 'rgba(16, 185, 129, 0.6)' },
-    { label: 'Home Expense', shortLabel: 'Home', value: Number(expense) || 0, color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.6)' },
+    { label: 'Food & Dining', shortLabel: 'Food', value: Number(foodExpense) || 0, color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.6)' },
+    { label: 'Daily & Utils', shortLabel: 'Daily', value: Number(dailyExpense) || 0, color: '#fb923c', glow: 'rgba(251, 146, 60, 0.6)' },
+    { label: 'Other / Misc', shortLabel: 'Other', value: Number(otherExpense) || 0, color: '#a78bfa', glow: 'rgba(167, 139, 250, 0.6)' },
     { label: 'Car Expense', shortLabel: 'Car', value: Number(car) || 0, color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.6)' },
     { label: 'Bike Expense', shortLabel: 'Bike', value: Number(bike) || 0, color: '#c084fc', glow: 'rgba(192, 132, 252, 0.6)' },
     { label: 'Money Lent', shortLabel: 'Lent', value: Number(given) || 0, color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.6)' },

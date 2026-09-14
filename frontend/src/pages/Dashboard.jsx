@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   Zap,
   History,
+  Receipt,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
@@ -404,6 +405,9 @@ export default function Dashboard() {
           <ThreeCanvasChart
             income={data?.income}
             expense={data?.expense}
+            foodExpense={data?.foodExpense || metrics?.foodExpenses || 0}
+            dailyExpense={data?.dailyExpense || metrics?.dailyExpenses || 0}
+            otherExpense={data?.otherExpense || metrics?.otherExpenses || 0}
             car={data?.car}
             bike={data?.bike}
             given={data?.given}
